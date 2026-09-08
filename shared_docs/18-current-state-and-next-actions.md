@@ -14,6 +14,7 @@
 | 最新提交 | `8ee65fc docs: initialize JD-driven job prep project` | 已推送 |
 | 工作区 | `main` 与 `origin/main` 同步 | 已确认 |
 | 产品代码 | 尚无 `frontend/`、`backend/`、`worker/` 等实现目录 | 未开始 |
+| 产品名称 | “职径（CareerPath）”仅为暂定文案，尚未最终确定 | 待定 |
 | 规格文档 | `shared_docs/00`～`18` 与索引已存在 | 已完成 |
 | 本地 CodeArts 目录 | `.codeartsdoer/` 存在，但被根 `.gitignore` 排除 | 本地工具状态 |
 | 项目级技能 | `.codeartsdoer/skills/ui-ux-pro-max` 已安装，仅供本地 CodeArts Doer 使用 | 已安装，未入 Git |
@@ -29,6 +30,7 @@
 - “CP-001 尚未开始”：不准确。CP-001 的 Git 初始化、远端关联、根 README、忽略规则和基础属性已完成；CodeArts 项目、流水线和应用骨架仍未完成。
 - “shared_docs 有18份文档”：需要说明统计口径。当前 `shared_docs` 包含 `00`～`18` 共19份编号/索引文件；根目录另有一份 README。数量不是开发状态判断依据。
 - “需求文档非常完整”不能等同于“项目已完成”。当前只有规格和数据契约，尚无业务代码、迁移、测试或云端部署。
+- “职径（CareerPath）”不能视为已经确定的品牌名。实现阶段使用 `jobprep`/`jd-driven-job-prep` 作为技术标识，待产品命名确认后再替换界面文案。
 - “当前应立即询问用户再开始”：不必阻塞所有开发。可以先完成不依赖外部账号的 CP-001 剩余工作和 CP-002 契约骨架；外部确认事项单独登记。
 
 ## 3. CP-001 完成度
@@ -115,4 +117,3 @@
 阻塞：具体外部依赖；无则写“无”
 下一步：一个明确任务编号
 ```
-
