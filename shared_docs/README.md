@@ -32,8 +32,19 @@
 4. [15-codeartsdoer-backlog.md](./15-codeartsdoer-backlog.md)：任务编号、依赖和验收；
 5. [16-model-prompt-contracts.md](./16-model-prompt-contracts.md)：模型调用边界与提示词契约；
 6. 与当前任务编号对应的模块手册；
-7. [11-codearts-and-engineering.md](./11-codearts-and-engineering.md)、[13-risk-and-compliance.md](./13-risk-and-compliance.md)：工程和合规约束。
+7. [11-codearts-and-engineering.md](./11-codearts-and-engineering.md)、[13-risk-and-compliance.md](./13-risk-and-compliance.md)：工程和合规约束；
 8. [18-current-state-and-next-actions.md](./18-current-state-and-next-actions.md)：当前仓库事实、已完成项和下一步。
+
+## 首版技术冻结摘要
+
+- 主业务 API 固定为 Spring Boot `/api/v1`；Python 仅用于异步采集、解析和模型适配 Worker；
+- 逻辑能力图谱使用 PostgreSQL/RDS 关系表，不因“图谱”命名直接引入图数据库；
+- 岗位发现采用企业白名单 + 站点适配器 + 统一 Schema，静态 HTTP 优先，Playwright 仅作二级方案；
+- 文本面试采用自定义状态机 + MaaS；不集成 Rasa/Botpress；学习模块不集成 Oppia/Open edX；
+- 初赛部署采用 Docker Compose + ECS/云容器，Kubernetes、通用爬虫框架和大型平台依赖均非前置；
+- 外部本体、数据集和 GitHub 示例仅可在来源、许可证和适配审查后参考，不得复制代码、数据、提示词或历史。
+
+详细边界见 [02-system-architecture.md](./02-system-architecture.md)、[03-official-job-discovery.md](./03-official-job-discovery.md)、[04-capability-graph.md](./04-capability-graph.md)、[06-targeted-interview.md](./06-targeted-interview.md)、[07-learning-path.md](./07-learning-path.md)、[11-codearts-and-engineering.md](./11-codearts-and-engineering.md) 和 [13-risk-and-compliance.md](./13-risk-and-compliance.md)。
 
 如果任务与本文档冲突，以 `00`、`14`、`16` 中的约束为准；如果仍无法判断，停止修改并提出具体问题。不得通过猜测补齐接口、分数、硬门槛或业务事实。
 
