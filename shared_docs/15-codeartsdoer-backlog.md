@@ -8,6 +8,8 @@
 
 状态建议：`TODO → IN_PROGRESS → REVIEW → ACCEPTED`，阻塞使用 `BLOCKED` 并附证据。
 
+当前状态以 [18-current-state-and-next-actions.md](./18-current-state-and-next-actions.md) 为准。当前 `CP-001` 为 `PARTIAL`：Git 仓库、`main` 分支、GitHub 远端和首个文档提交已完成；CodeArts 项目/流水线、应用骨架、健康检查和启动脚本仍待完成。云码道不得重复执行已完成的 Git 初始化，也不得将 `PARTIAL` 当成 `ACCEPTED`。
+
 ## 2. 依赖图
 
 ```text
@@ -143,4 +145,3 @@ CP-003 与 CP-004 的标准库可在契约冻结后并行；CP-005 可与二者�
 风险与遗留：……
 下一依赖：CP-XXX
 ```
-
