@@ -1,0 +1,42 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: career-path-backend
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/career_path}
+    username: ${DATABASE_USERNAME:career_path}
+    password: ${DATABASE_PASSWORD:career_path}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when-authorized
+
+app:
+  cors:
+    allowed-origins: ${FRONTEND_BASE_URL:http://localhost:5173}
+
+logging:
+  level:
+    root: INFO
+    com.careerpath: DEBUG
