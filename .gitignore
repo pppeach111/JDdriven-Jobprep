@@ -11,6 +11,7 @@
 # IDE and operating system
 .idea/
 .vscode/
+.arts/
 .DS_Store
 Thumbs.db
 
@@ -20,11 +21,26 @@ dist/
 build/
 target/
 .venv/
+venv/
 __pycache__/
 *.py[cod]
+*.egg-info/
+*.tsbuildinfo
+.mvn/wrapper/maven-wrapper.properties.bak
+!.mvn/wrapper/maven-wrapper.jar
+
+# Test and tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # Logs and temporary files
 *.log
 tmp/
 temp/
+logs/
+*.hprof
+
+# Local deployment override
+deploy/.env
 
