@@ -1,6 +1,10 @@
 # Local agent/runtime state
 .codeartsdoer/
 
+# 本机 agent 工具链的第三方技能包拷贝（约 2.8MB，非交付物，避免许可证混淆）
+# 需要时用 tools/install-codearts-skills.ps1 重新安装
+tools/
+
 # Environment and secrets
 .env
 .env.*

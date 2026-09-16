@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# 执行数据库迁移（Flyway）。
+# 依据 shared_docs/17-environment-and-runbook.md 第 5.2、6 节。
+#
+# 迁移文件位于 backend/src/main/resources/db/migration，按版本号不可修改。
+
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+info() { printf '[db-migrate] %s\n' "$1"; }
+fail() { printf '[db-migrate][error] %s\n' "$1" >&2; exit 1; }
+
+if [ ! -f .env ]; then
+  fail ".env 不存在，请先复制 .env.example 并填入本地依赖值。"
+fi
+
+set -a
+# shellcheck disable=SC1091
+. ./.env
+set +a
+
+: "${DATABASE_URL:?DATABASE_URL 未配置}"
+: "${DATABASE_USERNAME:?DATABASE_USERNAME 未配置}"
+: "${DATABASE_PASSWORD:?DATABASE_PASSWORD 未配置}"
+
+info "目标数据库：$(printf '%s' "$DATABASE_URL" | sed -E 's#(//[^:]+:)[^@]*@#\1***@#')"
+
+cd backend
+
+MVN="./mvnw"
+if [ ! -x "$MVN" ] && [ ! -f "$MVN" ]; then
+  fail "未找到 backend/mvnw，无法执行迁移。"
+fi
+
+info "flyway:migrate"
+"$MVN" -q -B flyway:migrate \
+  -Dflyway.url="$DATABASE_URL" \
+  -Dflyway.user="$DATABASE_USERNAME" \
+  -Dflyway.password="$DATABASE_PASSWORD" \
+  -Dflyway.locations="filesystem:src/main/resources/db/migration" \
+  -Dflyway.baselineOnMigrate=true
+
+info "迁移完成"

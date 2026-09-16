@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+# 启动本地依赖（PostgreSQL、Redis）。
+# 依据 shared_docs/17-environment-and-runbook.md 第 5 节。
+#
+# 行为：
+#   1. 若仓库根目录没有 .env，从 .env.example 复制一份并提示补值；
+#   2. 若 5432 / 6379 已被本机服务占用，则复用并跳过 Docker；
+#   3. 否则用 deploy/docker-compose.yml 启动缺失的依赖；
+#   4. 等待依赖就绪。
+#
+# 本脚本不删除任何数据。停止依赖请用 scripts/dev-down。
+
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+COMPOSE_FILE="deploy/docker-compose.yml"
+
+info() { printf '[dev-up] %s\n' "$1"; }
+warn() { printf '[dev-up][warn] %s\n' "$1" >&2; }
+fail() { printf '[dev-up][error] %s\n' "$1" >&2; exit 1; }
+
+# ---------- 1. 环境变量 ----------
+if [ ! -f .env ]; then
+  warn ".env 不存在，已从 .env.example 复制。请填入本地依赖值后重试。"
+  cp .env.example .env
+  fail "请编辑 .env（至少确认 DATABASE_PASSWORD），然后重新运行 scripts/dev-up"
+fi
+
+set -a
+# shellcheck disable=SC1091
+. ./.env
+set +a
+
+POSTGRES_PORT="${POSTGRES_PORT:-5432}"
+REDIS_PORT="${REDIS_PORT:-6379}"
+
+# ---------- 2. 端口探测 ----------
+port_in_use() {
+  local port="$1"
+  if command -v netstat >/dev/null 2>&1; then
+    netstat -ano 2>/dev/null | grep -E "LISTENING" | grep -qE "[:.]${port}[[:space:]]"
+  else
+    return 1
+  fi
+}
+
+docker_available() {
+  command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1
+}
+
+NEED_DOCKER=0
+
+if port_in_use "$POSTGRES_PORT"; then
+  info "端口 ${POSTGRES_PORT} 已被占用，复用本机 PostgreSQL（跳过 Docker）"
+else
+  NEED_DOCKER=1
+  info "端口 ${POSTGRES_PORT} 空闲，将用 Docker 启动 PostgreSQL"
+fi
+
+if port_in_use "$REDIS_PORT"; then
+  info "端口 ${REDIS_PORT} 已被占用，复用本机 Redis（跳过 Docker）"
+else
+  NEED_DOCKER=1
+  info "端口 ${REDIS_PORT} 空闲，将用 Docker 启动 Redis"
+fi
+
+# ---------- 3. 启动依赖 ----------
+if [ "$NEED_DOCKER" -eq 1 ]; then
+  if ! docker_available; then
+    fail "需要 Docker 启动依赖，但 Docker 守护进程不可用。请启动 Docker Desktop，或自行准备 PostgreSQL ${POSTGRES_PORT} / Redis ${REDIS_PORT}。"
+  fi
+  info "docker compose up -d"
+  docker compose -f "$COMPOSE_FILE" --env-file .env up -d
+
+  info "等待依赖就绪（最多 90 秒）..."
+  for _ in $(seq 1 45); do
+    PG_OK=1
+    REDIS_OK=1
+    port_in_use "$POSTGRES_PORT" || PG_OK=0
+    port_in_use "$REDIS_PORT" || REDIS_OK=0
+    if [ "$PG_OK" -eq 1 ] && [ "$REDIS_OK" -eq 1 ]; then
+      info "依赖已就绪"
+      break
+    fi
+    sleep 2
+  done
+else
+  info "复用现有依赖，无需启动容器"
+fi
+
+info "完成。下一步：scripts/db-migrate"

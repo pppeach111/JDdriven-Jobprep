@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# 停止本地依赖，不删除数据。
+# 依据 shared_docs/17-environment-and-runbook.md 第 5.2 节。
+
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+COMPOSE_FILE="deploy/docker-compose.yml"
+
+info() { printf '[dev-down] %s\n' "$1"; }
+warn() { printf '[dev-down][warn] %s\n' "$1" >&2; }
+
+if ! command -v docker >/dev/null 2>&1 || ! docker info >/dev/null 2>&1; then
+  warn "Docker 守护进程不可用，无需停止 Docker 依赖。"
+  warn "若依赖由本机服务提供，请自行按需停止，本脚本不动本机服务。"
+  exit 0
+fi
+
+info "docker compose stop（保留数据卷）"
+docker compose -f "$COMPOSE_FILE" stop
+
+info "已停止。数据卷保留；如需彻底删除请人工执行 docker compose down -v。"

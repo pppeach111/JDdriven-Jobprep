@@ -1,0 +1,50 @@
+# 本地依赖编排：PostgreSQL + Redis
+# 依据 shared_docs/17-environment-and-runbook.md 第 3、9 节。
+# 生产环境不得将数据库和 Redis 端口直接暴露公网，本文件仅用于本地开发。
+#
+# 用法：
+#   docker compose -f deploy/docker-compose.yml up -d
+# 环境变量从仓库根目录的 .env 读取（见 .env.example）。
+
+name: career-path
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: careerpath-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-career_path}
+      POSTGRES_USER: ${DATABASE_USERNAME:-career_path}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-career_path}
+      TZ: Asia/Shanghai
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - careerpath-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME:-career_path} -d ${DATABASE_NAME:-career_path}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: careerpath-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - careerpath-redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
+volumes:
+  careerpath-pgdata:
+  careerpath-redisdata:

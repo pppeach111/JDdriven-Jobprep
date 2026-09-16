@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# 关键路径烟测（对应 shared_docs/17-environment-and-runbook.md 第 10 节的前半段）。
+# 覆盖：健康检查 -> 创建求职目标 -> 导入 JD -> 解析 -> 能力图谱。
+#
+# 前置：后端已在 APP_BASE_URL 启动，且已完成迁移。
+# 本脚本只读取/创建虚构演示数据，不触发任何自动投递。
+
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+BASE_URL="${APP_BASE_URL:-http://localhost:8080}"
+
+pass() { printf '  [PASS] %s\n' "$1"; }
+fail() { printf '  [FAIL] %s\n' "$1" >&2; exit 1; }
+step() { printf '[smoke] %s\n' "$1"; }
+
+need_cmd() {
+  command -v "$1" >/dev/null 2>&1 || fail "缺少命令：$1"
+}
+need_cmd curl
+
+json_get() {
+  # 极简 JSON 取值：json_get <json> <key>，仅用于平坦的字符串/数字字段
+  printf '%s' "$1" | sed -n -E "s/.*\"$2\"[[:space:]]*:[[:space:]]*\"?([^\",}]*)\"?.*/\1/p" | head -1
+}
+
+step "1/5 健康检查"
+for path in /actuator/health/live /actuator/health/ready; do
+  code="$(curl -s -o /dev/null -w '%{http_code}' "${BASE_URL}${path}" || true)"
+  if [ "$code" = "200" ]; then
+    pass "$path -> 200"
+  else
+    fail "$path -> $code（后端未就绪？）"
+  fi
+done
+
+step "2/5 创建求职目标"
+GOAL_JSON="$(curl -s -X POST "${BASE_URL}/api/v1/goals" \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Java 后端开发实习生","city":"深圳","employmentType":"INTERNSHIP","jobFamily":"JAVA_BACKEND"}')"
+GOAL_ID="$(json_get "$GOAL_JSON" "id")"
+[ -n "$GOAL_ID" ] || fail "创建目标失败：$GOAL_JSON"
+pass "goalId=$GOAL_ID"
+
+step "3/5 导入目标 JD"
+JD_TEXT='岗位要求：2026届本科及以上学历，熟悉Java基础与集合，熟悉Spring Boot，了解MySQL与Redis，有并发编程实践经验者优先。'
+curl -s -X POST "${BASE_URL}/api/v1/goals/${GOAL_ID}/jd" \
+  -H 'Content-Type: application/json' \
+  -d "$(printf '{"rawText":"%s","sourceUrl":"https://example.com/job/1"}' "$JD_TEXT")" >/dev/null
+pass "JD 已导入"
+
+step "4/5 解析 JD"
+PARSE_JSON="$(curl -s -X POST "${BASE_URL}/api/v1/goals/${GOAL_ID}/analyze")"
+REQ_COUNT="$(printf '%s' "$PARSE_JSON" | grep -o '"type"' | wc -l | tr -d ' ')"
+[ "$REQ_COUNT" -gt 0 ] || fail "解析未产出任何要求：$PARSE_JSON"
+pass "解析出 $REQ_COUNT 条结构化要求"
+
+step "5/5 生成能力图谱"
+CAP_JSON="$(curl -s "${BASE_URL}/api/v1/goals/${GOAL_ID}/capability-map")"
+CARD_COUNT="$(printf '%s' "$CAP_JSON" | grep -o '"skillId"' | wc -l | tr -d ' ')"
+[ "$CARD_COUNT" -gt 0 ] || fail "能力图谱为空：$CAP_JSON"
+pass "能力图谱含 $CARD_COUNT 项技能"
+
+printf '\n[smoke] 通过：核心闭环（目标 -> JD -> 解析 -> 能力图谱）可用\n'
+printf '[smoke] goalId=%s（可用于人工复查）\n' "$GOAL_ID"

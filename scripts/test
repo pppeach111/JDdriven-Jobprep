@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# 运行单元、契约与集成测试。
+# 依据 shared_docs/17-environment-and-runbook.md 第 5.2 节。
+
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+info() { printf '[test] %s\n' "$1"; }
+fail() { printf '[test][error] %s\n' "$1" >&2; exit 1; }
+
+FAILED=0
+
+# ---------- 后端 ----------
+info "后端：mvn test"
+if [ -f backend/mvnw ]; then
+  ( cd backend && ./mvnw -B test ) || FAILED=1
+else
+  printf '[test][warn] backend/mvnw 缺失，跳过后端测试\n' >&2
+fi
+
+# ---------- 前端 ----------
+if [ -f frontend/package.json ]; then
+  if [ -d frontend/node_modules ]; then
+    info "前端：npm test"
+    ( cd frontend && npm test --silent ) || FAILED=1
+  else
+    printf '[test][warn] frontend/node_modules 缺失，先执行 (cd frontend && npm install)\n' >&2
+  fi
+else
+  info "前端尚未初始化，跳过"
+fi
+
+# ---------- Worker ----------
+if [ -f worker/pyproject.toml ]; then
+  if command -v uv >/dev/null 2>&1; then
+    info "Worker：uv run pytest"
+    ( cd worker && uv run pytest -q ) || FAILED=1
+  else
+    printf '[test][warn] 未找到 uv，跳过 Worker 测试（依赖见 worker/pyproject.toml）\n' >&2
+  fi
+else
+  info "Worker 尚未初始化，跳过"
+fi
+
+if [ "$FAILED" -ne 0 ]; then
+  fail "存在失败的测试"
+fi
+
+info "全部测试通过"

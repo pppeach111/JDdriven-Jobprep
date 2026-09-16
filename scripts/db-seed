@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# 导入虚构种子数据（幂等，可重复执行）。
+# 依据 shared_docs/17-environment-and-runbook.md 第 5.2、6 节：
+# 种子数据全部虚构、脱敏、可重复执行；不写入真实个人信息。
+#
+# 种子文件位于 database/seed/*.sql，按文件名顺序执行。
+# 注意：Schema 迁移由 Flyway 负责（scripts/db-migrate），本脚本只写业务演示数据。
+
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+SEED_DIR="database/seed"
+
+info() { printf '[db-seed] %s\n' "$1"; }
+fail() { printf '[db-seed][error] %s\n' "$1" >&2; exit 1; }
+
+if [ ! -f .env ]; then
+  fail ".env 不存在，请先复制 .env.example 并填入本地依赖值。"
+fi
+
+set -a
+# shellcheck disable=SC1091
+. ./.env
+set +a
+
+: "${DATABASE_URL:?DATABASE_URL 未配置}"
+: "${DATABASE_USERNAME:?DATABASE_USERNAME 未配置}"
+: "${DATABASE_PASSWORD:?DATABASE_PASSWORD 未配置}"
+
+command -v psql >/dev/null 2>&1 || fail "缺少 psql 命令，无法导入种子数据。"
+
+if ! ls "$SEED_DIR"/*.sql >/dev/null 2>&1; then
+  fail "$SEED_DIR 下没有 .sql 种子文件。"
+fi
+
+# jdbc:postgresql://host:port/db -> postgresql://host:port/db
+PSQL_URL="${DATABASE_URL#jdbc:}"
+
+info "目标：$(printf '%s' "$PSQL_URL" | sed -E 's#//[^@]*@#//***@#')"
+
+for file in "$SEED_DIR"/*.sql; do
+  info "执行 $(basename "$file")"
+  PGPASSWORD="$DATABASE_PASSWORD" psql "$PSQL_URL" \
+    -U "$DATABASE_USERNAME" \
+    -v ON_ERROR_STOP=1 \
+    -q \
+    -f "$file"
+done
+
+info "种子数据导入完成"
