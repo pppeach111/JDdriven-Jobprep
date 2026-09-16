@@ -33,6 +33,18 @@ docs/           对外 README、API 导出和变更记录
 
 公共契约放在 `docs/contracts` 或由 OpenAPI 自动导出；不要在前后端各维护一份未经校验的接口定义。
 
+### 2.1 项目级云码道技能
+
+版本化的项目技能源文件位于 `tools/codearts-skills/`。`.codeartsdoer/` 是本机运行目录并被 Git 忽略，不作为技能单一事实来源。
+
+克隆仓库或重建 `.codeartsdoer/` 后运行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\install-codearts-skills.ps1
+```
+
+脚本会把版本化技能复制到 `.codeartsdoer/skills/`，并在 `ProjectSkillStatus.txt` 中启用。当前仓库提供 `careerpath-ui`、设计系统、设计审计、风格参考、图标和 UI/UX 检索技能；来源、版本、许可证和适用边界见 `tools/codearts-skills/SOURCES.md`。所有前端任务仍以 `shared_docs/19-ui-design-system.md` 为最终约束。
+
 ## 3. 本地端口
 
 默认端口可调整，但必须统一记录在 `.env.example`：

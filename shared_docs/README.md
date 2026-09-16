@@ -34,6 +34,7 @@
 6. 与当前任务编号对应的模块手册；
 7. [11-codearts-and-engineering.md](./11-codearts-and-engineering.md)、[13-risk-and-compliance.md](./13-risk-and-compliance.md)：工程和合规约束；
 8. [18-current-state-and-next-actions.md](./18-current-state-and-next-actions.md)：当前仓库事实、已完成项和下一步。
+9. 涉及前端时额外阅读 [19-ui-design-system.md](./19-ui-design-system.md)：设计方向、令牌、页面模式、状态与视觉验收。
 
 ## 首版技术冻结摘要
 
@@ -81,6 +82,7 @@
 | [16-model-prompt-contracts.md](./16-model-prompt-contracts.md) | JD/简历/岗位/测评/面试模型契约与防注入规则 | AI、后端 |
 | [17-environment-and-runbook.md](./17-environment-and-runbook.md) | 版本基线、环境变量、启动、迁移、部署和烟测 | 全员/云码道 |
 | [18-current-state-and-next-actions.md](./18-current-state-and-next-actions.md) | 现状校准、CP-001完成度、待确认事项和立即行动 | 云码道/全员 |
+| [19-ui-design-system.md](./19-ui-design-system.md) | 前端设计方向、令牌、布局、页面模板和视觉验收 | 前端、产品、云码道 |
 
 ## 单一事实来源
 
@@ -96,6 +98,7 @@
 - 必须在全新仓库从零开发，保留真实 Git 和 CodeArts 开发记录，不复制 MindSpace 的代码与提交历史。
 - 所有开发任务必须引用 backlog 编号，提交、测试和 CodeArts 工作项保持可追溯。
 - 任何模块完成前必须通过对应契约测试、最小端到端路径和文档更新，不接受只有页面或只有模型提示词的“完成”。
+- 所有用户界面以 `19-ui-design-system.md` 为视觉和交互单一事实来源，本地设计技能只能补充候选方案，不能覆盖项目规则。
 - “方案文档已完成”不等于“软件功能已实现”；当前实现状态以 `18-current-state-and-next-actions.md` 为准。
 
 ## 开工前必须确认

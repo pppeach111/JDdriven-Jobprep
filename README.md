@@ -11,10 +11,16 @@
 3. [跨模块契约](./shared_docs/14-contracts-and-schemas.md)
 4. [可领取任务 Backlog](./shared_docs/15-codeartsdoer-backlog.md)
 5. [模型调用契约](./shared_docs/16-model-prompt-contracts.md)
+6. 前端任务额外阅读：[前端体验与视觉系统](./shared_docs/19-ui-design-system.md)
 
 云码道必须按 backlog 依赖领取任务，使用 `/api/v1` 契约，不得猜测字段或绕过测试。项目从零开发，不复制 MindSpace 的代码和 Git 历史。
+
+在新环境初始化项目级云码道技能：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\install-codearts-skills.ps1
+```
 
 ## 文档目录
 
 完整产品、架构、模块手册、评测、排期、CodeArts 留痕、答辩和合规要求均位于 [`shared_docs`](./shared_docs/README.md)。
-
