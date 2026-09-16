@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>职径 · 分析概览（风格预览稿 v2）</title>
+<style>
+/* ============================================================================
+   职径 · 设计令牌（三层架构）
+   Layer 1 原始值  →  Layer 2 语义  →  Layer 3 组件
+   视觉参照：Avenra AI Dashboard（浅色 + 靛蓝紫 + 玻璃拟态 + 大圆角 + pill）
+   ========================================================================== */
+:root{
+  /* ---------------- Layer 1 · Primitive ---------------- */
+  --white:#FFFFFF;
+  --indigo-50:#EEF0FF;  --indigo-100:#E0E3FF; --indigo-200:#C7CBFD;
+  --indigo-300:#A5ACFB; --indigo-500:#6366F1; --indigo-600:#5B4BE8;
+  --indigo-700:#4338CA;
+  --violet-500:#7C3AED; --violet-100:#F3E8FB;
+  --slate-25:#FBFAFE;   --slate-50:#F8F7FC;  --slate-100:#F1F0F8;
+  --slate-400:#9A9EBA;  --slate-600:#6A6E8C; --slate-700:#4A4E6B;
+  --slate-900:#16172B;
+  --teal-600:#0F8F80;   --teal-50:#E4F5F2;
+  --amber-600:#B87808;  --amber-50:#FCF3E2;
+  --rose-600:#C9353B;   --rose-50:#FDECEC;
+  --pink-600:#C8498A;   --pink-50:#FBEBF3;
+  --blue-600:#2F66D6;   --blue-50:#EAF0FD;
+
+  /* ---------------- Layer 2 · Semantic ---------------- */
+  --color-canvas:var(--slate-50);
+  --color-canvas-tint-a:#E7EAFB;
+  --color-canvas-tint-b:var(--violet-100);
+  --color-surface:var(--white);
+  --color-surface-glass:rgba(255,255,255,.72);
+  --color-surface-glass-strong:rgba(255,255,255,.90);
+  --color-surface-sunken:rgba(255,255,255,.62);
+  --color-surface-veil:rgba(255,255,255,.15);
+  --color-border-glass:rgba(255,255,255,.95);
+  --color-border-hairline:rgba(22,23,43,.07);
+  --color-border-brand:rgba(91,75,232,.16);
+  --color-border-line:rgba(22,23,43,.10);
+
+  --color-text-primary:var(--slate-900);
+  --color-text-secondary:var(--slate-600);
+  --color-text-tertiary:var(--slate-400);
+  --color-text-on-brand:var(--white);
+
+  --color-action:var(--indigo-600);
+  --color-action-hover:var(--indigo-700);
+  --color-action-soft:var(--indigo-50);
+
+  --color-status-success:var(--teal-600);
+  --color-status-success-bg:var(--teal-50);
+  --color-status-warning:var(--amber-600);
+  --color-status-warning-bg:var(--amber-50);
+  --color-status-danger:var(--rose-600);
+  --color-status-danger-bg:var(--rose-50);
+  --color-status-info:var(--blue-600);
+  --color-status-info-bg:var(--blue-50);
+  --color-status-neutral:var(--slate-600);
+  --color-status-neutral-bg:rgba(22,23,43,.05);
+  --color-status-conflict:var(--pink-600);
+  --color-status-conflict-bg:var(--pink-50);
+
+  --focus-ring:0 0 0 3px rgba(99,102,241,.34);
+
+  /* ---------------- Layer 3 · Component ---------------- */
+  --font-sans:"Plus Jakarta Sans","PingFang SC","Microsoft YaHei","Noto Sans CJK SC",system-ui,-apple-system,sans-serif;
+  --nav-h:70px;
+  --page-max:1460px;
+  --space-page-x:32px;
+  --space-card:22px;
+  --gap-grid:20px;
+
+  --radius-card:24px;
+  --radius-panel:28px;
+  --radius-control:12px;
+  --radius-icon:14px;
+  --radius-pill:999px;
+
+  --shadow-card:0 4px 24px rgba(0,0,0,.04), 0 1px 3px rgba(22,23,43,.03);
+  --shadow-card-hover:0 12px 34px rgba(70,60,180,.12), 0 2px 6px rgba(22,23,43,.05);
+  --shadow-brand:0 8px 22px rgba(91,75,232,.30);
+  --shadow-nav:0 6px 24px rgba(70,60,180,.05);
+  --shadow-float:0 14px 40px rgba(70,60,180,.16);
+
+  --glass-blur:18px;
+  --glass-saturate:170%;
+  --ctl-h:40px;
+  --dur:.16s;
+}
+
+/* ---------------- 基础 ---------------- */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%}
+body{
+  font-family:var(--font-sans);
+  color:var(--color-text-primary);
+  font-size:14px;line-height:1.55;
+  background:
+    radial-gradient(1100px 560px at 8% -14%, var(--color-canvas-tint-a) 0%, rgba(231,234,251,0) 62%),
+    radial-gradient(900px 520px at 99% -6%, var(--color-canvas-tint-b) 0%, rgba(243,232,251,0) 58%),
+    var(--color-canvas);
+  background-attachment:fixed;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--color-action-soft)}
+svg{display:block;flex:0 0 auto}
+:focus-visible{outline:0;box-shadow:var(--focus-ring);border-radius:8px}
+
+/* ============================================================================
+   顶部横向导航（对齐参考图：Logo + 导航 + 搜索 + 通知 + 用户）
+   ========================================================================== */
+.topnav{
+  position:sticky;top:0;z-index:40;
+  height:var(--nav-h);
+  display:flex;align-items:center;gap:20px;
+  padding:0 var(--space-page-x);
+  background:var(--color-surface-glass);
+  backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border-bottom:1px solid var(--color-border-glass);
+  box-shadow:var(--shadow-nav);
+}
+.brand{display:flex;align-items:center;gap:10px;flex:0 0 auto}
+.brand-mark{
+  width:34px;height:34px;border-radius:11px;
+  background:linear-gradient(135deg,#7A6BFF,var(--indigo-600));
+  box-shadow:var(--shadow-brand);
+  display:grid;place-items:center;color:#fff;
+}
+.brand-text{line-height:1.15}
+.brand-name{font-size:15.5px;font-weight:800;letter-spacing:.1px}
+.brand-sub{font-size:10.5px;color:var(--color-text-tertiary);font-weight:500}
+
+.navlinks{display:flex;align-items:center;gap:2px;flex:1;min-width:0;overflow:hidden}
+.navlink{
+  display:inline-flex;align-items:center;gap:7px;
+  height:38px;padding:0 14px;border-radius:var(--radius-pill);
+  font-size:13.5px;font-weight:600;color:var(--color-text-secondary);
+  cursor:pointer;white-space:nowrap;
+  transition:background var(--dur) ease,color var(--dur) ease;
+}
+.navlink:hover{background:var(--color-surface-glass-strong);color:var(--color-text-primary)}
+.navlink.active{
+  background:linear-gradient(135deg,#6B5BF0,var(--indigo-600));
+  color:#fff;box-shadow:var(--shadow-brand);
+}
+.navlink .count{
+  font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:var(--radius-pill);
+  background:rgba(22,23,43,.06);color:var(--color-text-secondary);
+}
+.navlink.active .count{background:rgba(255,255,255,.24);color:#fff}
+
+.nav-actions{display:flex;align-items:center;gap:9px;flex:0 0 auto;margin-left:auto}
+.search{
+  display:flex;align-items:center;gap:9px;
+  width:250px;height:var(--ctl-h);padding:0 8px 0 14px;
+  background:var(--color-surface-glass-strong);
+  border:1px solid var(--color-border-glass);
+  border-radius:var(--radius-pill);
+  box-shadow:0 1px 2px rgba(22,23,43,.03);
+}
+.search input{
+  flex:1;min-width:0;border:0;outline:0;background:transparent;
+  font-family:inherit;font-size:13px;color:var(--color-text-primary);
+}
+.search input::placeholder{color:var(--color-text-tertiary)}
+.search kbd{
+  font-family:inherit;font-size:10.5px;font-weight:600;color:var(--color-text-tertiary);
+  background:rgba(22,23,43,.05);border-radius:6px;padding:2px 6px;
+}
+.icon-btn{
+  width:var(--ctl-h);height:var(--ctl-h);position:relative;
+  border:1px solid var(--color-border-glass);border-radius:var(--radius-pill);
+  background:var(--color-surface-glass-strong);
+  display:grid;place-items:center;cursor:pointer;
+  color:var(--color-text-secondary);
+  transition:box-shadow var(--dur) ease,color var(--dur) ease;
+}
+.icon-btn:hover{box-shadow:var(--shadow-card);color:var(--color-action)}
+.icon-btn .dot{
+  position:absolute;top:9px;right:10px;width:7px;height:7px;border-radius:50%;
+  background:var(--color-status-danger);border:2px solid #fff;
+}
+.avatar{
+  width:var(--ctl-h);height:var(--ctl-h);border-radius:50%;
+  background:linear-gradient(135deg,#A9B6FF,#7C6BF5);
+  display:grid;place-items:center;color:#fff;
+  font-size:13px;font-weight:800;cursor:pointer;
+  border:2px solid var(--color-surface-glass-strong);
+  box-shadow:var(--shadow-card);
+}
+
+/* ============================================================================
+   通用控件
+   ========================================================================== */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  height:var(--ctl-h);padding:0 18px;border:1px solid transparent;
+  border-radius:var(--radius-pill);
+  font-family:inherit;font-size:13.5px;font-weight:700;
+  cursor:pointer;white-space:nowrap;
+  transition:box-shadow var(--dur) ease,transform var(--dur) ease,background var(--dur) ease,color var(--dur) ease;
+}
+.btn-primary{background:linear-gradient(135deg,#6B5BF0,var(--indigo-600));color:#fff;box-shadow:var(--shadow-brand)}
+.btn-primary:hover{box-shadow:0 10px 26px rgba(91,75,232,.38);transform:translateY(-1px)}
+.btn-ghost{
+  background:var(--color-surface-glass-strong);color:var(--color-text-secondary);
+  border-color:var(--color-border-glass);box-shadow:0 1px 2px rgba(22,23,43,.03);
+}
+.btn-ghost:hover{color:var(--color-text-primary);box-shadow:var(--shadow-card)}
+.btn-sm{height:34px;padding:0 14px;font-size:12.5px}
+
+.chip{
+  display:inline-flex;align-items:center;gap:5px;
+  height:26px;padding:0 10px;border-radius:var(--radius-pill);
+  font-size:11.5px;font-weight:700;letter-spacing:.1px;
+  background:var(--color-status-neutral-bg);color:var(--color-status-neutral);
+  white-space:nowrap;
+}
+.chip .mark{width:6px;height:6px;border-radius:50%;background:currentColor;flex:0 0 6px}
+.chip.ok{background:var(--color-status-success-bg);color:var(--color-status-success)}
+.chip.warn{background:var(--color-status-warning-bg);color:var(--color-status-warning)}
+.chip.danger{background:var(--color-status-danger-bg);color:var(--color-status-danger)}
+.chip.info{background:var(--color-status-info-bg);color:var(--color-status-info)}
+.chip.conflict{background:var(--color-status-conflict-bg);color:var(--color-status-conflict)}
+.chip.brand{background:var(--color-action-soft);color:var(--color-action)}
+
+.pill-tabs{
+  display:inline-flex;align-items:center;gap:2px;padding:3px;
+  background:var(--color-surface-glass-strong);
+  border:1px solid var(--color-border-glass);
+  border-radius:var(--radius-pill);
+  box-shadow:0 1px 2px rgba(22,23,43,.03);
+}
+.pill-tabs span{
+  height:28px;display:inline-flex;align-items:center;padding:0 12px;
+  border-radius:var(--radius-pill);font-size:12px;font-weight:600;
+  color:var(--color-text-secondary);cursor:pointer;white-space:nowrap;
+}
+.pill-tabs span.on{background:var(--color-action);color:#fff;box-shadow:0 4px 12px rgba(91,75,232,.26)}
+
+/* ============================================================================
+   页面骨架
+   ========================================================================== */
+.page{max-width:var(--page-max);margin:0 auto;padding:24px var(--space-page-x) 56px}
+
+.page-head{display:flex;align-items:flex-start;gap:24px;margin-bottom:20px}
+.page-head-main{flex:1;min-width:0}
+.crumb{font-size:12px;color:var(--color-text-tertiary);margin-bottom:6px}
+.page-title{font-size:30px;line-height:1.24;font-weight:800;letter-spacing:-.6px}
+.page-desc{font-size:14px;color:var(--color-text-secondary);margin-top:7px;max-width:700px}
+.page-desc b{color:var(--color-text-primary);font-weight:700}
+.page-meta{display:flex;align-items:center;gap:8px;margin-top:13px;flex-wrap:wrap}
+.page-head-actions{display:flex;align-items:center;gap:10px;padding-top:28px;flex:0 0 auto}
+
+/* 主网格：上排三列 / 下排两列（对齐参考图） */
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:var(--gap-grid)}
+.col-4{grid-column:span 4}
+.col-6{grid-column:span 6}
+.col-8{grid-column:span 8}
+.col-12{grid-column:span 12}
+
+.card{
+  background:var(--color-surface-glass);
+  backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border:1px solid var(--color-border-glass);
+  border-radius:var(--radius-card);
+  box-shadow:var(--shadow-card);
+  padding:var(--space-card);
+  display:flex;flex-direction:column;
+  transition:box-shadow .18s ease;
+}
+.card:hover{box-shadow:var(--shadow-card-hover)}
+.card-head{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.card-ico{
+  width:36px;height:36px;flex:0 0 36px;border-radius:12px;
+  display:grid;place-items:center;
+  background:var(--color-action-soft);color:var(--color-action);
+}
+.card-title{font-size:18px;line-height:1.4;font-weight:700;letter-spacing:-.2px}
+.card-sub{font-size:11.5px;color:var(--color-text-tertiary);font-weight:500;margin-left:auto;text-align:right}
+.card-foot{margin-top:auto;padding-top:16px;border-top:1px solid var(--color-border-hairline)}
+
+/* ============================================================================
+   组件：事实栅格 / 洞察环 / 差距条 / 趋势图 / 时间线 / 表格 / 行动条 / 说明
+   ========================================================================== */
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.fact{
+  background:var(--color-surface-glass-strong);
+  border:1px solid var(--color-border-glass);
+  border-radius:var(--radius-control);
+  padding:12px 13px;
+}
+.fact-k{font-size:11px;color:var(--color-text-tertiary);margin-bottom:3px;font-weight:600}
+.fact-v{font-size:14px;font-weight:700}
+.fact-v .unknown{color:var(--color-text-tertiary);font-weight:600}
+.fact-v .inferred{color:var(--color-action);font-weight:700}
+
+.strip{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--color-border-hairline)}
+
+/* 洞察环（替代雷达图，规避其可访问性短板） */
+.insight{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.ring-wrap{position:relative;width:168px;height:168px;flex:0 0 168px}
+.ring-wrap svg{width:168px;height:168px}
+.ring-center{
+  position:absolute;inset:0;display:grid;place-content:center;gap:1px;
+}
+.ring-v{font-size:34px;line-height:1;font-weight:800;letter-spacing:-1px}
+.ring-k{font-size:11px;color:var(--color-text-tertiary);font-weight:600}
+.ring-tags{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.insight-text{font-size:12.5px;color:var(--color-text-secondary);line-height:1.6}
+.insight-text b{color:var(--color-text-primary);font-weight:700}
+
+/* 差距条 */
+.gap{
+  display:flex;align-items:center;flex-wrap:wrap;gap:13px;
+  padding:13px 14px;border-radius:var(--radius-control);
+  background:var(--color-surface-glass-strong);
+  border:1px solid var(--color-border-glass);
+}
+.gap + .gap{margin-top:10px}
+.gap-rank{
+  width:27px;height:27px;flex:0 0 27px;border-radius:9px;
+  display:grid;place-items:center;font-size:12px;font-weight:800;
+  background:var(--color-action-soft);color:var(--color-action);
+}
+.gap-body{flex:1;min-width:0}
+.gap-name{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.gap-lv{font-size:11.5px;color:var(--color-text-secondary);margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.lv-badge{
+  font-size:11px;font-weight:800;padding:1px 7px;border-radius:6px;
+  background:rgba(22,23,43,.06);color:var(--color-text-primary);
+}
+.lv-badge.target{background:var(--color-action-soft);color:var(--color-action)}
+.conf{display:inline-flex;align-items:center;gap:6px}
+.conf-bar{width:46px;height:4px;border-radius:2px;background:var(--color-border-line);overflow:hidden}
+.conf-bar i{display:block;height:100%;border-radius:2px;background:var(--color-action)}
+.conf-bar i.low{background:var(--color-status-warning)}
+
+/* 趋势图 */
+.chart{display:flex;align-items:flex-end;gap:10px;height:136px;padding:6px 2px 0}
+.chart .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;height:100%}
+.chart .bar-wrap{flex:1;width:100%;display:flex;align-items:flex-end}
+.chart .bar{
+  width:100%;border-radius:9px 9px 4px 4px;
+  background:linear-gradient(180deg,rgba(122,107,255,.90),rgba(91,75,232,.68));
+  box-shadow:0 4px 12px rgba(91,75,232,.18);
+}
+.chart .col.peak .bar{background:linear-gradient(180deg,#7A6BFF,var(--indigo-600));box-shadow:0 6px 16px rgba(91,75,232,.34)}
+.chart .col.dim .bar{background:linear-gradient(180deg,rgba(122,107,255,.30),rgba(91,75,232,.20));box-shadow:none}
+.chart .lbl{font-size:11px;color:var(--color-text-tertiary);font-variant-numeric:tabular-nums}
+.kpis{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.kpi{display:flex;flex-direction:column;gap:1px}
+.kpi-v{font-size:23px;line-height:1.15;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.kpi-k{font-size:11px;color:var(--color-text-tertiary);font-weight:600}
+
+/* 时间线 */
+.day-tabs{display:flex;gap:6px;margin-bottom:16px}
+.day{
+  flex:1;text-align:center;padding:8px 4px;border-radius:var(--radius-control);
+  background:var(--color-surface-glass-strong);
+  border:1px solid var(--color-border-glass);cursor:pointer;
+}
+.day-k{font-size:10.5px;color:var(--color-text-tertiary);font-weight:600}
+.day-v{font-size:15px;font-weight:800;line-height:1.3;font-variant-numeric:tabular-nums}
+.day.on{background:linear-gradient(135deg,#6B5BF0,var(--indigo-600));border-color:transparent;box-shadow:var(--shadow-brand)}
+.day.on .day-k{color:rgba(255,255,255,.8)}
+.day.on .day-v{color:#fff}
+
+.tl{position:relative;padding-left:22px}
+.tl::before{
+  content:"";position:absolute;left:5px;top:6px;bottom:10px;width:1.5px;
+  background:linear-gradient(180deg,rgba(91,75,232,.32),rgba(91,75,232,.05));
+}
+.tl-item{position:relative;padding:0 0 16px}
+.tl-item:last-child{padding-bottom:2px}
+.tl-item::before{
+  content:"";position:absolute;left:-22px;top:4px;width:11px;height:11px;border-radius:50%;
+  background:#fff;border:2.5px solid rgba(91,75,232,.32);
+}
+.tl-item.done::before{background:var(--color-action);border-color:var(--color-action)}
+.tl-item.now::before{background:#fff;border-color:var(--color-action);box-shadow:0 0 0 4px rgba(91,75,232,.14)}
+.tl-time{font-size:11px;color:var(--color-text-tertiary);font-weight:600;font-variant-numeric:tabular-nums}
+.tl-title{font-size:13.5px;font-weight:700;margin-top:1px}
+.tl-meta{font-size:11.5px;color:var(--color-text-secondary);margin-top:3px;display:flex;gap:9px;flex-wrap:wrap}
+.tl-meta span{display:inline-flex;align-items:center;gap:4px}
+
+/* 表格 */
+.table-scroll{overflow-x:auto;margin:0 -4px}
+table{width:100%;border-collapse:collapse;min-width:660px}
+th{
+  font-size:11px;font-weight:700;color:var(--color-text-tertiary);text-align:left;
+  padding:0 10px 9px;border-bottom:1px solid var(--color-border-hairline);
+  white-space:nowrap;letter-spacing:.2px;
+}
+td{padding:0 10px;height:50px;border-bottom:1px solid var(--color-border-hairline);font-size:13px;vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
+tbody tr{transition:background var(--dur) ease}
+tbody tr:hover{background:rgba(255,255,255,.66)}
+.cell-main{font-weight:700;display:flex;align-items:center;gap:7px}
+.cell-sub{font-size:11px;color:var(--color-text-tertiary);margin-top:1px}
+.sdot{width:7px;height:7px;border-radius:50%;flex:0 0 7px;background:currentColor}
+.num{font-variant-numeric:tabular-nums;color:var(--color-text-secondary)}
+.text-btn{
+  font-family:inherit;font-size:12.5px;font-weight:700;color:var(--color-action);
+  background:none;border:0;cursor:pointer;padding:4px 0;
+}
+.text-btn:hover{color:var(--color-action-hover);text-decoration:underline}
+
+/* 下一步行动条 */
+.next-step{
+  display:flex;align-items:center;gap:18px;
+  margin-bottom:var(--gap-grid);
+  padding:22px 24px;border-radius:var(--radius-panel);
+  background:linear-gradient(120deg,rgba(122,107,255,.16),rgba(91,75,232,.05) 55%,rgba(255,255,255,.55));
+  backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border:1px solid var(--color-border-brand);
+  box-shadow:var(--shadow-card);
+}
+.next-step .ico{
+  width:46px;height:46px;flex:0 0 46px;border-radius:15px;
+  background:linear-gradient(135deg,#7A6BFF,var(--indigo-600));
+  display:grid;place-items:center;color:#fff;box-shadow:var(--shadow-brand);
+}
+.next-step-title{font-size:16px;font-weight:800;letter-spacing:-.2px}
+.next-step-desc{font-size:12.5px;color:var(--color-text-secondary);margin-top:3px}
+
+/* 说明卡 */
+.notes{grid-column:span 12;background:var(--color-surface-sunken)}
+.notes h3{font-size:15px;font-weight:800;margin-bottom:5px;letter-spacing:-.2px}
+.notes p.lead{font-size:12.5px;color:var(--color-text-secondary);margin-bottom:12px}
+.notes ul{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:9px 22px}
+.notes li{font-size:12.5px;color:var(--color-text-secondary);display:flex;gap:9px;align-items:flex-start}
+.notes li .b{color:var(--color-action);font-weight:800;flex:0 0 auto}
+.notes code{
+  font-family:"SFMono-Regular",Consolas,monospace;font-size:11.5px;
+  background:rgba(22,23,43,.05);border-radius:5px;padding:1px 5px;color:var(--color-text-primary);
+}
+.notes p.tail{font-size:12.5px;color:var(--color-text-secondary);margin:14px 0 0}
+
+/* ---------------- 响应式 ---------------- */
+@media (max-width:1359px){
+  .search{width:190px}
+  .col-4{grid-column:span 6}
+  .col-8{grid-column:span 12}
+  .col-6{grid-column:span 12}
+}
+@media (max-width:1099px){
+  :root{--space-page-x:22px}
+  .navlinks .navlink .txt{display:none}
+  .navlink{padding:0 11px}
+  .col-4{grid-column:span 12}
+}
+@media (max-width:767px){
+  :root{--space-page-x:15px;--space-card:17px;--gap-grid:14px;--nav-h:62px}
+  .topnav{gap:10px}
+  .navlinks{display:none}
+  .search{width:auto;flex:1}
+  .search kbd{display:none}
+  .page{padding-top:18px}
+  .page-head{flex-direction:column;gap:14px}
+  .page-head-actions{padding-top:0;width:100%}
+  .page-head-actions .btn{flex:1}
+  .page-title{font-size:23px;letter-spacing:-.4px}
+  .facts{grid-template-columns:1fr}
+  .notes ul{grid-template-columns:1fr}
+  .next-step{flex-direction:column;align-items:flex-start;gap:13px}
+  .next-step .btn{width:100%}
+  .kpis{gap:16px}
+}
+</style>
+</head>
+<body>
+
+<!-- ======================= 顶部横向导航 ======================= -->
+<header class="topnav">
+  <div class="brand">
+    <div class="brand-mark">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 19V5"/><path d="M4 15l5-5 4 4 7-7"/>
+      </svg>
+    </div>
+    <div class="brand-text">
+      <div class="brand-name">职径</div>
+      <div class="brand-sub">求职能力工作台</div>
+    </div>
+  </div>
+
+  <nav class="navlinks">
+    <div class="navlink">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+      </svg>
+      <span class="txt">求职目标</span>
+    </div>
+    <div class="navlink active">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/>
+        <path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/>
+        <path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>
+      </svg>
+      <span class="txt">能力与证据</span>
+      <span class="count">12</span>
+    </div>
+    <div class="navlink">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/>
+      </svg>
+      <span class="txt">岗位发现</span>
+      <span class="count">7</span>
+    </div>
+    <div class="navlink">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
+        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>
+      </svg>
+      <span class="txt">测评与面试</span>
+    </div>
+    <div class="navlink">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>
+      </svg>
+      <span class="txt">学习计划</span>
+      <span class="count">3</span>
+    </div>
+    <div class="navlink">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+        <path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>
+      </svg>
+      <span class="txt">简历建议</span>
+    </div>
+  </nav>
+
+  <div class="nav-actions">
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9A9EBA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+      </svg>
+      <input placeholder="搜索能力、证据或岗位…">
+      <kbd>⌘K</kbd>
+    </div>
+    <button class="icon-btn" title="通知" aria-label="通知">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.268 21a2 2 0 0 0 3.464 0"/>
+        <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>
+      </svg>
+      <span class="dot"></span>
+    </button>
+    <div class="avatar" title="张同学">张</div>
+  </div>
+</header>
+
+<main class="page">
+
+  <!-- ======================= 页面标题区 ======================= -->
+  <div class="page-head">
+    <div class="page-head-main">
+      <div class="crumb">能力与证据 / 分析概览</div>
+      <h1 class="page-title">早上好，张同学</h1>
+      <p class="page-desc">
+        当前目标共 <b>12 项</b>要求，其中 <b>8 项</b>已有证据支撑；最需要优先补齐的是
+        <b>Redis 缓存设计</b> 与 <b>并发编程</b>。
+      </p>
+      <div class="page-meta">
+        <span class="chip ok"><span class="mark"></span>解析完成</span>
+        <span class="chip warn"><span class="mark"></span>2 项待确认</span>
+        <span class="chip"><span class="mark"></span>最后更新 09-16 21:40</span>
+      </div>
+    </div>
+    <div class="page-head-actions">
+      <div class="pill-tabs">
+        <span>7 天</span><span class="on">30 天</span><span>全部</span>
+      </div>
+      <button class="btn btn-ghost">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round">
+          <path d="M20 6 9 17l-5-5"/>
+        </svg>
+        查看依据
+      </button>
+      <button class="btn btn-ghost">
+        开始测评
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============ 下一步行动（全页唯一主操作，置于首屏，19 号文档 §2.2 / §6.5） ============ -->
+  <div class="next-step">
+    <div class="ico">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>
+      </svg>
+    </div>
+    <div style="flex:1;min-width:0">
+      <div class="next-step-title">下一步：完成 Redis 缓存设计实践任务</div>
+      <div class="next-step-desc">完成后可复测并更新「Redis 缓存设计」的等级估计，预计影响 3 个在投岗位的匹配度。</div>
+    </div>
+    <button class="btn btn-primary">开始实践任务</button>
+  </div>
+
+  <div class="grid">
+
+    <!-- ============ 上排 1/3：当前目标 ============ -->
+    <section class="card col-4">
+      <div class="card-head">
+        <div class="card-ico">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+          </svg>
+        </div>
+        <div class="card-title">当前目标</div>
+        <div class="card-sub">JD 解析于<br>2 小时前</div>
+      </div>
+
+      <div class="facts">
+        <div class="fact"><div class="fact-k">岗位族</div><div class="fact-v">Java 后端</div></div>
+        <div class="fact"><div class="fact-k">招聘类型</div><div class="fact-v">实习</div></div>
+        <div class="fact"><div class="fact-k">城市</div><div class="fact-v">杭州</div></div>
+        <div class="fact"><div class="fact-k">每周可投入</div><div class="fact-v">24 小时</div></div>
+        <div class="fact"><div class="fact-k">毕业年份</div><div class="fact-v"><span class="unknown">UNKNOWN</span></div></div>
+        <div class="fact"><div class="fact-k">学历要求</div><div class="fact-v">本科及以上</div></div>
+      </div>
+
+      <div class="card-foot strip" style="margin-top:auto">
+        <span class="chip"><span class="mark"></span>UNKNOWN 1 项：毕业年份</span>
+        <span class="chip brand"><span class="mark"></span>1 项由推断得出</span>
+      </div>
+    </section>
+
+    <!-- ============ 上排 2/3：能力洞察 ============ -->
+    <section class="card col-4">
+      <div class="card-head">
+        <div class="card-ico">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>
+          </svg>
+        </div>
+        <div class="card-title">能力洞察</div>
+        <div class="card-sub">基于已确认证据<br>非模型直接判断</div>
+      </div>
+
+      <div class="insight">
+        <div class="ring-wrap">
+          <svg viewBox="0 0 168 168" aria-label="证据覆盖度 67%">
+            <defs>
+              <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#7A6BFF"/>
+                <stop offset="100%" stop-color="#5B4BE8"/>
+              </linearGradient>
+            </defs>
+            <circle cx="84" cy="84" r="66" fill="none" stroke="rgba(91,75,232,.10)" stroke-width="14"/>
+            <circle cx="84" cy="84" r="66" fill="none" stroke="url(#ringGrad)" stroke-width="14"
+                    stroke-linecap="round" stroke-dasharray="277.8 414.7"
+                    transform="rotate(-90 84 84)"/>
+            <circle cx="84" cy="84" r="46" fill="none" stroke="rgba(91,75,232,.08)" stroke-width="1.5"/>
+          </svg>
+          <div class="ring-center">
+            <div class="ring-v">67%</div>
+            <div class="ring-k">证据覆盖度</div>
+          </div>
+        </div>
+
+        <div class="ring-tags">
+          <span class="chip ok"><span class="mark"></span>8 项已支撑</span>
+          <span class="chip warn"><span class="mark"></span>2 项待确认</span>
+          <span class="chip conflict"><span class="mark"></span>1 项证据冲突</span>
+        </div>
+
+        <p class="insight-text">
+          优先补齐 <b>Redis 缓存设计</b>，预计可让 <b>3 个</b>在投岗位匹配度提升。
+        </p>
+      </div>
+
+      <div class="card-foot" style="margin-top:auto">
+        <button class="btn btn-ghost btn-sm" style="width:100%">
+          查看洞察依据
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m9 18 6-6-6-6"/>
+          </svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- ============ 上排 3/3：最高优先级差距（19 号文档 §7.2 要求先于覆盖） ============ -->
+    <section class="card col-4">
+      <div class="card-head">
+        <div class="card-ico">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3l2.4 5.6L20 10l-4.4 3.6L16.6 20 12 16.8 7.4 20l1-6.4L4 10l5.6-1.4L12 3z"/>
+          </svg>
+        </div>
+        <div class="card-title">最高优先级差距</div>
+        <div class="card-sub">按影响度排序<br>共 4 项</div>
+      </div>
+
+      <div class="gap">
+        <div class="gap-rank">1</div>
+        <div class="gap-body">
+          <div class="gap-name">Redis 缓存设计
+            <span class="chip conflict"><span class="mark"></span>实践不足</span>
+          </div>
+          <div class="gap-lv">
+            <span class="lv-badge target">要求 L3</span>
+            <span>当前</span><span class="lv-badge">L1</span>
+            <span class="conf"><span class="conf-bar"><i style="width:62%"></i></span>置信度 62% · 3 条证据</span>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-sm">查看依据</button>
+      </div>
+
+      <div class="gap">
+        <div class="gap-rank">2</div>
+        <div class="gap-body">
+          <div class="gap-name">并发编程
+            <span class="chip warn"><span class="mark"></span>知识缺口</span>
+          </div>
+          <div class="gap-lv">
+            <span class="lv-badge target">要求 L3</span>
+            <span>当前</span><span class="lv-badge">L2</span>
+            <span class="conf"><span class="conf-bar"><i class="low" style="width:48%"></i></span>置信度 48% · 2 条证据</span>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-sm">查看依据</button>
+      </div>
+
+      <div class="gap">
+        <div class="gap-rank">3</div>
+        <div class="gap-body">
+          <div class="gap-name">消息队列（Kafka）
+            <span class="chip"><span class="mark"></span>证据不足</span>
+          </div>
+          <div class="gap-lv">
+            <span class="lv-badge target">要求 L2</span>
+            <span>当前</span><span class="lv-badge">UNKNOWN</span>
+            <span class="conf"><span class="conf-bar"><i class="low" style="width:12%"></i></span>置信度 12% · 0 条证据</span>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-sm">添加证据</button>
+      </div>
+    </section>
+
+    <!-- ============ 下排 1/2：证据覆盖 ============ -->
+    <section class="card col-6">
+      <div class="card-head">
+        <div class="card-ico">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/>
+          </svg>
+        </div>
+        <div class="card-title">证据覆盖</div>
+        <div class="card-sub">近 7 天 · 09-10 至 09-16</div>
+      </div>
+
+      <div class="chart">
+        <div class="col dim"><div class="bar-wrap"><div class="bar" style="height:26%"></div></div><div class="lbl">10</div></div>
+        <div class="col"><div class="bar-wrap"><div class="bar" style="height:38%"></div></div><div class="lbl">11</div></div>
+        <div class="col"><div class="bar-wrap"><div class="bar" style="height:32%"></div></div><div class="lbl">12</div></div>
+        <div class="col"><div class="bar-wrap"><div class="bar" style="height:58%"></div></div><div class="lbl">13</div></div>
+        <div class="col"><div class="bar-wrap"><div class="bar" style="height:74%"></div></div><div class="lbl">14</div></div>
+        <div class="col peak"><div class="bar-wrap"><div class="bar" style="height:100%"></div></div><div class="lbl">15</div></div>
+        <div class="col"><div class="bar-wrap"><div class="bar" style="height:86%"></div></div><div class="lbl">16</div></div>
+      </div>
+
+      <div class="card-foot kpis" style="margin-top:auto">
+        <div class="kpi"><span class="kpi-v">8</span><span class="kpi-k">有证据支撑</span></div>
+        <div class="kpi"><span class="kpi-v">5</span><span class="kpi-k">近 7 天新增</span></div>
+        <div class="kpi"><span class="kpi-v">2</span><span class="kpi-k">待确认</span></div>
+      </div>
+    </section>
+
+    <!-- ============ 下排 2/2：本周计划 ============ -->
+    <section class="card col-6">
+      <div class="card-head">
+        <div class="card-ico">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>
+          </svg>
+        </div>
+        <div class="card-title">本周计划</div>
+        <div class="card-sub">已完成 1 / 3</div>
+      </div>
+
+      <div class="day-tabs">
+        <div class="day"><div class="day-k">周一</div><div class="day-v">14</div></div>
+        <div class="day on"><div class="day-k">周三</div><div class="day-v">16</div></div>
+        <div class="day"><div class="day-k">周五</div><div class="day-v">18</div></div>
+        <div class="day"><div class="day-k">周日</div><div class="day-v">20</div></div>
+      </div>
+
+      <div class="tl">
+        <div class="tl-item done">
+          <div class="tl-time">周一 · 已提交</div>
+          <div class="tl-title">HTTP 缓存语义整理</div>
+          <div class="tl-meta">
+            <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>产出：笔记</span>
+            <span>验收：通过</span>
+          </div>
+        </div>
+        <div class="tl-item now">
+          <div class="tl-time">周三 · 进行中</div>
+          <div class="tl-title">用 Redis 实现热点数据缓存</div>
+          <div class="tl-meta">
+            <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>预计 3 小时</span>
+            <span>验收：缓存命中 + 失效策略</span>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-time">周五 · 待开始</div>
+          <div class="tl-title">复测：缓存设计 L2 测评</div>
+          <div class="tl-meta"><span>前置：完成实践任务</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 全宽：最近岗位结果 ============ -->
+    <section class="card col-12">
+      <div class="card-head">
+        <div class="card-ico">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/>
+          </svg>
+        </div>
+        <div class="card-title">最近岗位结果</div>
+        <div class="card-sub">仅展示企业官方入口 · 最后核验 09-16</div>
+      </div>
+
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>岗位 / 企业</th>
+              <th>地点</th>
+              <th>开放状态</th>
+              <th>建议</th>
+              <th>关键门槛</th>
+              <th>最后核验</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="cell-main"><span class="sdot" style="color:var(--color-status-success)"></span>Java 后端开发实习生</div>
+                <div class="cell-sub">示例科技有限公司</div>
+              </td>
+              <td class="num">杭州</td>
+              <td><span class="chip ok"><span class="mark"></span>已确认开放</span></td>
+              <td><span class="chip brand">现在适合投</span></td>
+              <td class="num">硕士 / 无硬性年限</td>
+              <td class="num">09-16 20:10</td>
+              <td><button class="text-btn">查看依据</button></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="cell-main"><span class="sdot" style="color:var(--color-status-warning)"></span>后端研发实习生（基础架构）</div>
+                <div class="cell-sub">示例网络技术公司</div>
+              </td>
+              <td class="num">上海</td>
+              <td><span class="chip warn"><span class="mark"></span>状态待确认</span></td>
+              <td><span class="chip warn">补齐后再投</span></td>
+              <td class="num">Redis L3 · Kafka L2</td>
+              <td class="num">09-15 09:30</td>
+              <td><button class="text-btn">重新核验</button></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="cell-main"><span class="sdot" style="color:var(--color-status-danger)"></span>Java 开发实习生</div>
+                <div class="cell-sub">示例信息服务公司</div>
+              </td>
+              <td class="num">南京</td>
+              <td><span class="chip danger"><span class="mark"></span>已关闭</span></td>
+              <td><span class="chip">不建议投递</span></td>
+              <td class="num">毕业年份限制</td>
+              <td class="num">09-12 16:45</td>
+              <td><button class="text-btn">查看依据</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+
+    <!-- ============ 状态与诚实展示（契约要求） ============ -->
+    <section class="card notes">
+      <h3>状态与诚实展示（契约要求，未因风格变更而放弃）</h3>
+      <p class="lead">以下元素按 14 号契约与 19 号文档第 2.4 / 8 节保留，风格改版不改语义。</p>
+      <div class="strip" style="margin-top:0;padding-top:0;border-top:0">
+        <span class="chip ok"><span class="mark"></span>完整成功</span>
+        <span class="chip info"><span class="mark"></span>加载中：正在核验岗位状态</span>
+        <span class="chip warn"><span class="mark"></span>PARTIAL：3 项已解析，2 项待确认</span>
+        <span class="chip danger"><span class="mark"></span>失败：来源站点暂时不可用</span>
+        <span class="chip">UNKNOWN</span>
+        <span class="chip brand">推断（非原文显式）</span>
+        <span class="chip conflict">证据冲突</span>
+      </div>
+    </section>
+
+    <!-- ============ 19 号文档修订结果 ============ -->
+    <section class="card notes">
+      <h3>19 号文档修订结果（2026-09-16 已定稿）</h3>
+      <p class="lead">下述 7 项已正式写入 <code>19-ui-design-system.md</code>（第 501 行 §18 修订台账），并在 18 号文档记录了变更理由与影响页面。</p>
+      <ul>
+        <li><span class="b">✓</span><span>主色 <code>#176B5B</code> → <code>#5B4BE8</code>，令牌表扩为三层架构（§4.1）。</span></li>
+        <li><span class="b">✓</span><span>玻璃拟态解禁，新增 §4.5 使用规范（禁嵌套、参数、对比度、降级）。</span></li>
+        <li><span class="b">✓</span><span>渐变限定为主按钮 / 选中导航项 / 数据图形三处（§4.1 规则）。</span></li>
+        <li><span class="b">✓</span><span>圆角 12px → 控件 12 / 卡片 24 / 面板 28 / pill（§4.3）。</span></li>
+        <li><span class="b">✓</span><span>阴影放宽为常态柔和阴影，并给出可核查的 alpha 与模糊半径边界（§4.3）。</span></li>
+        <li><span class="b">✓</span><span>桌面外壳改为顶部横向导航，桌面段改为 1024 / 1359 / 全宽三档（§3.2、§3.3）。</span></li>
+        <li><span class="b">✓</span><span>禁用条款收窄为：禁荧光光晕、禁高饱和彩色阴影、禁装饰性渐变（§4.1、§16）。</span></li>
+      </ul>
+      <p class="tail">
+        <b>附加澄清（超出原 7 项，需你知悉）：</b>§2.3 原要求“不依赖 <code>careerpath</code> 品牌字符串”，
+        本稿界面使用了工作名“职径”。已改为：界面展示用工作名，令牌名与组件名一律用语义名，
+        工作名变更时只替换展示层，不牵连令牌与路由。<br>
+        <b>实现注意：</b>玻璃拟态保留全量使用（已确认），但需按 §4.5 加 <code>will-change</code>、
+        不做嵌套模糊、提供 <code>@supports</code> 降级；字体自托管 <code>Plus Jakarta Sans</code> 的 400/600/700/800 四个字重，
+        不引 Google Fonts CDN；对比度按最不利底层色核算（本稿状态色已配文字，未以颜色作唯一载体）。
+      </p>
+    </section>
+
+
+  </div>
+</main>
+
+</body>
+</html>
