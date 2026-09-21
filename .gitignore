@@ -45,6 +45,9 @@ temp/
 logs/
 *.hprof
 
+# 验收/调试临时产物（CDP 探针脚本、临时报告、headless 浏览器 profile）
+.tmp-*
+
 # Local deployment override
 deploy/.env
 
