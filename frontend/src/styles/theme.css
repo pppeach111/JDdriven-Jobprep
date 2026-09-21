@@ -532,3 +532,913 @@ a {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ===================== Beautiful UI Vue adaptation =====================
+ * Beautiful UI 的公开组件以 React/shadcn registry 形式分发；本项目保留
+ * Vue 3 + TypeScript，并将其信息结构、状态表达与 compact control 语言本地化。
+ */
+:root {
+  --color-canvas: #f6f6f4;
+  --color-canvas-tint-a: #f6f6f4;
+  --color-canvas-tint-b: #efefec;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f2f2ef;
+  --color-surface-glass: rgba(255, 255, 255, 0.94);
+  --color-surface-glass-strong: #ffffff;
+  --color-surface-sunken: #eeeeeb;
+  --color-text: #18181b;
+  --color-text-muted: #65656b;
+  --color-text-subtle: #929297;
+  --color-border: #dededb;
+  --color-border-strong: #b9b9b5;
+  --color-border-hairline: #ecece9;
+  --color-border-glass: #e4e4e1;
+  --color-border-brand: rgba(91, 75, 232, 0.26);
+  --color-primary: #5b4be8;
+  --color-primary-hover: #4338ca;
+  --color-primary-soft: #eeedff;
+  --color-primary-gradient: #5b4be8;
+  --color-neutral: #65656b;
+  --color-neutral-bg: #f0f0ed;
+  /* 2026-09-21：可访问性修正。原值在各自浅背景上只有 3.3~3.5:1，
+     11px 的状态标记文字不达 WCAG AA 的 4.5:1（§11 为硬性要求），
+     因此把 success / warning 调深到 4.9:1 / 4.6:1；
+     text-subtle 由 #929297（2.8:1）调深到 #6b6b73（4.8:1），
+     否则 dim 类小字（最后核验时间、计数、单位）全部不合格。 */
+  --color-success: #0a7568;
+  --color-warning: #9a6206;
+  --color-text-subtle: #6b6b73;
+  --radius-control: 8px;
+  --radius-icon: 8px;
+  --radius-card: 14px;
+  --radius-panel: 18px;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 2px rgba(24, 24, 27, 0.04), 0 8px 24px rgba(24, 24, 27, 0.035);
+  --shadow-card-hover: 0 2px 4px rgba(24, 24, 27, 0.06), 0 14px 30px rgba(24, 24, 27, 0.07);
+  --shadow-brand: 0 4px 12px rgba(91, 75, 232, 0.2);
+  --shadow-nav: 0 1px 0 rgba(24, 24, 27, 0.06);
+  --shadow-float: 0 16px 40px rgba(24, 24, 27, 0.16);
+  --glass-blur: 0px;
+  --glass-saturate: 100%;
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+}
+
+body {
+  background-color: var(--color-canvas);
+  background-image: none;
+}
+
+.surface,
+.surface__inner {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.surface--hoverable:hover,
+.surface:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+.btn,
+.bui-button {
+  min-height: 38px;
+  padding: 8px 14px;
+  border-radius: var(--radius-control);
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+.btn--primary,
+.bui-button--primary {
+  color: var(--color-text-on-brand);
+  background: var(--color-primary);
+  box-shadow: var(--shadow-brand);
+}
+
+.btn--primary:not(:disabled):hover,
+.bui-button--primary:not(:disabled):hover {
+  background: var(--color-primary-hover);
+  box-shadow: var(--shadow-brand);
+}
+
+.btn--ghost,
+.bui-button--secondary {
+  color: var(--color-text);
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+.btn--ghost:not(:disabled):hover,
+.bui-button--secondary:not(:disabled):hover {
+  background: var(--color-surface-subtle);
+  border-color: var(--color-border-strong);
+}
+
+.input,
+.textarea,
+.select {
+  min-height: 40px;
+  padding: 9px 11px;
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  border-radius: var(--radius-control);
+}
+
+.textarea {
+  min-height: 240px;
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(91, 75, 232, 0.12);
+}
+
+.tag,
+.bui-status {
+  min-height: 24px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.bui-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid transparent;
+  font: inherit;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) ease, border-color var(--dur-fast) ease,
+    color var(--dur-fast) ease, transform var(--dur-fast) ease;
+}
+
+.bui-button--quiet {
+  color: var(--color-text-muted);
+  background: transparent;
+  border-color: transparent;
+}
+
+.bui-button--quiet:hover {
+  color: var(--color-text);
+  background: var(--color-surface-subtle);
+}
+
+.bui-button--danger {
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  border-color: rgba(201, 53, 59, 0.22);
+}
+
+.bui-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.bui-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-neutral);
+  background: var(--color-neutral-bg);
+  border: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.bui-status__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.bui-status--accent { color: var(--color-primary); background: var(--color-primary-soft); border-color: var(--color-border-brand); }
+.bui-status--good { color: var(--color-success); background: var(--color-success-bg); border-color: rgba(10, 117, 104, 0.22); }
+.bui-status--warn { color: var(--color-warning); background: var(--color-warning-bg); border-color: rgba(154, 98, 6, 0.22); }
+.bui-status--bad { color: var(--color-danger); background: var(--color-danger-bg); border-color: rgba(201, 53, 59, 0.2); }
+
+.bui-kicker {
+  color: var(--color-text-subtle);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.bui-context {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-subtle);
+}
+
+.bui-context--warn { border-left-color: var(--color-warning); }
+.bui-context--good { border-left-color: var(--color-success); }
+
+.bui-context__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.bui-context__source {
+  color: var(--color-text-subtle);
+  font-size: 10px;
+}
+
+.bui-context__text {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.bui-task-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 9px 11px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+}
+
+.bui-task-row__marker {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: var(--color-text-subtle);
+}
+
+.bui-task-row__marker--accent { background: var(--color-primary); }
+.bui-task-row__marker--good { background: var(--color-success); }
+.bui-task-row__marker--warn { background: var(--color-warning); }
+.bui-task-row__marker--bad { background: var(--color-danger); }
+
+.bui-task-row__copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bui-task-row__copy strong {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 12.5px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bui-task-row__meta,
+.bui-task-row__status {
+  color: var(--color-text-subtle);
+  font-size: 10.5px;
+}
+
+.bui-task-row__status {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.bui-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.bui-loading__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 5px);
+  gap: 2px;
+  width: 19px;
+  height: 19px;
+}
+
+.bui-loading__cell {
+  width: 5px;
+  height: 5px;
+  background: var(--color-primary);
+  opacity: 0.2;
+}
+
+.bui-loading__cell--round { border-radius: 50%; }
+.bui-loading__time { color: var(--color-text-subtle); font-size: 10px; }
+
+@keyframes bui-pixel-on {
+  0%, 100% { opacity: 0.2; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+.filter {
+  min-height: 30px;
+  padding: 5px 10px;
+  border-radius: 6px;
+}
+
+.filter--active {
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  box-shadow: inset 0 0 0 1px var(--color-border-brand);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bui-loading__cell { animation: none !important; }
+}
+/* ===================== Beautiful UI Vue adaptation · 页面骨架 =====================
+ * 以下为一级页面共用结构（标题区、空状态、列表、矩阵、主从布局）的共享样式。
+ * 依据 19-ui-design-system.md §5 布局模式、§6 核心组件模式、§8 状态设计。
+ * 组件只写结构，视觉一律回到这里，避免页面各自发明颜色、圆角与字号。
+ */
+
+/* ---------- 品牌标记 ---------- */
+.bui-brand-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 10px;
+}
+
+.bui-brand-mark--solid {
+  color: var(--color-text-on-brand);
+  background: var(--color-primary);
+  box-shadow: var(--shadow-brand);
+}
+
+.bui-brand-mark--soft {
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  box-shadow: inset 0 0 0 1px var(--color-border-brand);
+}
+
+/* ---------- 页面标题区（§5.1） ---------- */
+.bui-page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--color-border-hairline);
+}
+
+.bui-page-header__context {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.bui-page-header__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 24px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.bui-page-header__back:hover {
+  color: var(--color-primary);
+}
+
+/* 复用 arrow-right 真实路径并旋转 180°，避免为「返回」再引入一个近似图标（§13） */
+.bui-page-header__back-icon {
+  transform: rotate(180deg);
+}
+
+.bui-page-header__crumb {
+  color: var(--color-text-subtle);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.bui-page-header__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.bui-page-header__main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.bui-page-header__title {
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+}
+
+.bui-page-header__desc {
+  max-width: 720px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.bui-page-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.bui-page-header__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--color-text-subtle);
+  font-size: 11.5px;
+}
+
+/* ---------- 分组（§5.2：优先标题、浅色背景区与分隔线，不滥用卡片） ---------- */
+.bui-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bui-section__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.bui-section__title {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.bui-section__note {
+  color: var(--color-text-subtle);
+  font-size: 11.5px;
+}
+
+.bui-note {
+  padding: 12px 14px;
+  border-radius: var(--radius-control);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.bui-rule {
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--color-border-hairline);
+}
+
+/* ---------- 空状态（§8 初始空状态） ---------- */
+.bui-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 640px;
+  padding: 28px 0;
+}
+
+.bui-empty__title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.bui-empty__reason {
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+
+.bui-empty__req {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--color-text-subtle);
+  font-size: 12px;
+}
+
+.bui-empty__req-label {
+  flex: 0 0 auto;
+  padding: 2px 7px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface-subtle);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.bui-empty__action {
+  padding-top: 6px;
+}
+
+/* ---------- 列表与工具条 ---------- */
+.bui-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bui-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.bui-filters {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  padding: 3px;
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+}
+
+.bui-filters .filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.filter__count {
+  color: var(--color-text-subtle);
+  font-size: 10px;
+}
+
+.bui-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface-subtle);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* ---------- 键值行：详情面板里的「字段 → 值」 ---------- */
+.bui-kv {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border-hairline);
+}
+
+.bui-kv:last-child {
+  border-bottom: 0;
+}
+
+.bui-kv__key {
+  flex: 0 0 auto;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.bui-kv__value {
+  min-width: 0;
+  font-size: 12.5px;
+  text-align: right;
+  word-break: break-word;
+}
+
+/* ---------- 分项条形（§9：匹配构成用分项条形图，不给单一百分比） ---------- */
+.bui-meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bui-meter__track {
+  position: relative;
+  flex: 1;
+  min-width: 60px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-neutral-bg);
+}
+
+.bui-meter__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-primary);
+}
+
+.bui-meter__value {
+  flex: 0 0 auto;
+  min-width: 62px;
+  color: var(--color-text-muted);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* ---------- 能力矩阵（§7.3：可排序矩阵，列固定） ---------- */
+.bui-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.bui-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.bui-table caption {
+  padding: 12px 14px 0;
+  color: var(--color-text-subtle);
+  font-size: 11.5px;
+  text-align: left;
+}
+
+.bui-table th,
+.bui-table td {
+  padding: 11px 14px;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--color-border-hairline);
+}
+
+.bui-table thead th {
+  background: var(--color-surface-subtle);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.bui-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.bui-table tbody tr:hover {
+  background: var(--color-surface-subtle);
+}
+
+.bui-table__num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 可选中行（矩阵 → 详情）：选中态不能只靠颜色，同时用左侧内边框强化（§11） */
+.bui-table__row {
+  cursor: pointer;
+}
+
+.bui-table tbody tr.bui-table__row--selected,
+.bui-table tbody tr.bui-table__row--selected:hover {
+  background: var(--color-primary-soft);
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+.bui-table__skill {
+  min-width: 180px;
+}
+
+.bui-table__next {
+  min-width: 220px;
+  color: var(--color-text-muted);
+}
+
+.bui-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  /* WCAG 2.2 AA 目标尺寸：表头排序按钮的点击区不得小于 24×24px */
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  cursor: pointer;
+}
+
+.bui-sort:hover {
+  color: var(--color-text);
+}
+
+.bui-sort--active {
+  color: var(--color-text);
+}
+
+.bui-sort__mark {
+  display: inline-flex;
+  color: var(--color-text-subtle);
+  transition: transform var(--dur-fast) ease;
+}
+
+/* 同上：同一 chevron-right 真实路径旋转表达升/降序，不新增近似图标 */
+.bui-sort__mark--asc {
+  transform: rotate(-90deg);
+}
+
+.bui-sort__mark--desc {
+  transform: rotate(90deg);
+}
+
+/* ---------- 主从布局（§5.3：宽屏 5:7；<1024 拆成单列） ---------- */
+.bui-split {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 18px;
+  align-items: start;
+}
+
+@media (max-width: 1023px) {
+  .bui-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- 阅读列宽约束 ---------- */
+.bui-focus-col {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.bui-form-col {
+  width: 100%;
+  max-width: 720px;
+}
+
+/* ---------- 表单字段的只读展示行 ---------- */
+.bui-readonly {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ---------- 响应式：标题区动作下移（§5.1 移动端） ---------- */
+@media (max-width: 767px) {
+  .bui-page-header__row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .bui-page-header__actions {
+    width: 100%;
+  }
+
+  .bui-page-header__title {
+    font-size: 19px;
+  }
+
+  .bui-table th,
+  .bui-table td {
+    padding: 10px 12px;
+  }
+
+  /* §3.3：数据表在小屏转为分组列表（标签 + 值），不依赖横向滚动。
+     表头与排序控件只保留在桌面档，移动端以查看结果为主。 */
+  .bui-table-wrap {
+    overflow-x: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .bui-table,
+  .bui-table tbody,
+  .bui-table tbody tr,
+  .bui-table tbody th,
+  .bui-table tbody td {
+    display: block;
+    width: auto;
+  }
+
+  .bui-table thead {
+    display: none;
+  }
+
+  /* caption 默认是 table-caption，父级转 block 后会收缩到最小内容宽度（逐字竖排），
+     必须显式转 block 才能正常换行。 */
+  .bui-table caption {
+    display: block;
+    padding: 0 0 8px;
+  }
+
+  .bui-table tbody tr {
+    margin-bottom: 8px;
+    padding: 12px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-control);
+    background: var(--color-surface);
+  }
+
+  .bui-table tbody tr:hover {
+    background: var(--color-surface);
+  }
+
+  .bui-table tbody tr.bui-table__row--selected,
+  .bui-table tbody tr.bui-table__row--selected:hover {
+    background: var(--color-primary-soft);
+    box-shadow: inset 3px 0 0 var(--color-primary);
+  }
+
+  .bui-table tbody th,
+  .bui-table tbody td {
+    padding: 0;
+    border-bottom: 0;
+  }
+
+  /* 首列作为卡片标题 */
+  .bui-table tbody th[scope='row'] {
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--color-border-hairline);
+  }
+
+  /* 其余单元格按「标签 + 值」成对显示 */
+  .bui-table tbody td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 3px 0;
+  }
+
+  .bui-table tbody td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    color: var(--color-text-subtle);
+    font-size: 11px;
+  }
+
+  .bui-table tbody td:not([data-label])::before {
+    content: none;
+  }
+
+  .bui-table__skill,
+  .bui-table__next {
+    min-width: 0;
+  }
+}
+
+/* ---------- 任务行扩展（岗位结果 / 学习任务 / 简历建议的额外汇总行） ---------- */
+.bui-task-row--expanded {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.bui-task-row__extra {
+  flex: 1 0 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.bui-task-row--muted {
+  background: var(--color-surface-subtle);
+}
+
+.bui-task-row--muted .bui-task-row__copy strong {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
