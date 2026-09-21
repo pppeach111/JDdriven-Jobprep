@@ -2,6 +2,10 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ApiError, api } from '@/api/client'
+import BeautifulButton from '@/components/BeautifulButton.vue'
+import BeautifulContextCard from '@/components/BeautifulContextCard.vue'
+import BeautifulLoadingState from '@/components/BeautifulLoadingState.vue'
+import BeautifulStatus from '@/components/BeautifulStatus.vue'
 import ConfidenceBadge from '@/components/ConfidenceBadge.vue'
 import type { JdParseResult, RequirementType, RequirementView } from '@/api/types'
 
@@ -11,6 +15,7 @@ const router = useRouter()
 const rawText = ref('')
 const sourceUrl = ref('')
 const analyzing = ref(false)
+const analysisStage = ref('')
 const errorMessage = ref('')
 const errorTraceId = ref('')
 const result = ref<JdParseResult | null>(null)
@@ -90,12 +95,14 @@ async function analyze() {
   analyzing.value = true
 
   try {
+    analysisStage.value = '正在保存 JD 原文'
     const imported = await api.importJd(props.goalId, {
       rawText: rawText.value,
       sourceUrl: sourceUrl.value.trim() || null,
     })
     importedSourceId.value = imported.data.sourceId
 
+    analysisStage.value = '正在提取结构化要求'
     const parsed = await api.analyzeJd(props.goalId)
     result.value = parsed.data
   } catch (error) {
@@ -107,6 +114,7 @@ async function analyze() {
     }
   } finally {
     analyzing.value = false
+    analysisStage.value = ''
   }
 }
 
@@ -139,9 +147,9 @@ function loadSample() {
       <section class="surface surface--lit card">
         <header class="card__head">
           <h2>JD 原文</h2>
-          <button class="btn btn--ghost btn--sm" type="button" @click="loadSample">
+          <BeautifulButton variant="secondary" type="button" @click="loadSample">
             填入示例
-          </button>
+          </BeautifulButton>
         </header>
 
         <div class="form">
@@ -179,9 +187,9 @@ function loadSample() {
           </p>
 
           <div class="actions">
-            <button class="btn btn--primary" type="button" :disabled="analyzing" @click="analyze">
+            <BeautifulButton variant="primary" type="button" :disabled="analyzing" @click="analyze">
               {{ analyzing ? '解析中…' : '导入并解析' }}
-            </button>
+            </BeautifulButton>
             <RouterLink class="btn btn--ghost" to="/goals/new">返回上一步</RouterLink>
           </div>
         </div>
@@ -194,21 +202,20 @@ function loadSample() {
           <p v-if="result" class="dim">
             来源 <span class="mono">{{ importedSourceId.slice(0, 8) }}</span>
             · 岗位族
-            <span class="tag tag--accent">{{ result.jobFamily.value }}</span>
+            <BeautifulStatus :label="result.jobFamily.value" tone="accent" />
           </p>
           <p v-else class="dim">解析完成后在此显示结构化要求。</p>
         </header>
 
-        <div v-if="!result" class="placeholder dim">
-          <p>尚未解析。</p>
+          <div v-if="!result" class="placeholder dim">
+            <BeautifulLoadingState v-if="analyzing" :label="analysisStage" variant="Drive" />
+            <p v-else>尚未解析。</p>
         </div>
 
         <template v-else>
           <!-- 未知字段：必须显式呈现 -->
           <div v-if="result.unknowns.length > 0" class="unknowns">
-            <span class="unknowns__title">
-              <span class="tag tag--unknown">未知 {{ result.unknowns.length }} 项</span>
-            </span>
+            <BeautifulStatus :label="`未知 ${result.unknowns.length} 项`" tone="neutral" />
             <ul class="unknowns__list">
               <li v-for="field in result.unknowns" :key="field" class="mono">
                 {{ field }}
@@ -237,24 +244,27 @@ function loadSample() {
               </h3>
 
               <ul class="reqs">
-                <li v-for="item in group.items" :key="item.id" class="req">
+                <li v-for="item in group.items" :key="item.id" class="requirement">
                   <div class="req__head">
                     <span class="req__main">{{ describe(item) }}</span>
                     <span v-if="!item.explicit" class="tag tag--warn">推断</span>
                     <ConfidenceBadge :value="item.confidence" compact />
                   </div>
-                  <blockquote v-if="item.sourceQuote" class="req__quote">
-                    {{ item.sourceQuote }}
-                  </blockquote>
+                  <BeautifulContextCard
+                    v-if="item.sourceQuote"
+                    eyebrow="原文依据"
+                    :text="item.sourceQuote"
+                    tone="neutral"
+                  />
                 </li>
               </ul>
             </section>
           </div>
 
           <div class="actions actions--end">
-            <button class="btn btn--primary" type="button" @click="goToCapability">
+            <BeautifulButton variant="primary" type="button" @click="goToCapability">
               查看能力图谱
-            </button>
+            </BeautifulButton>
           </div>
         </template>
       </section>
@@ -443,7 +453,7 @@ function loadSample() {
   list-style: none;
 }
 
-.req {
+.requirement {
   padding: 11px 13px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-control);

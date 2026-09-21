@@ -2,8 +2,26 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ApiError, api } from '@/api/client'
+import BeautifulButton from '@/components/BeautifulButton.vue'
+import BeautifulEmptyState from '@/components/BeautifulEmptyState.vue'
+import BeautifulLoadingState from '@/components/BeautifulLoadingState.vue'
+import BeautifulPageHeader from '@/components/BeautifulPageHeader.vue'
+import BeautifulStatus from '@/components/BeautifulStatus.vue'
+import BeautifulTaskRow from '@/components/BeautifulTaskRow.vue'
 import type { JobGoal } from '@/api/types'
 
+/**
+ * 求职目标（19-ui-design-system.md §7.1）。
+ *
+ * 2026-09-21 调整：
+ *   - 去掉横幅式大标题（原 .hero + h1），改为 §5.1 固定结构的页面标题区，
+ *     使 6 个一级页面的首屏结构一致；
+ *   - 正文改为 720px 单列步骤表单；「已有目标」从右侧栏移到表单下方，
+ *     避免与主表单争夺注意力，也消除与外壳断点体系不一致的 900px 内容断点；
+ *   - 产品定位句并入标题区说明，让品牌不只在顶栏出现。
+ *
+ * 本页面连接真实后端接口（/api/v1/goals），不使用演示数据。
+ */
 const router = useRouter()
 
 const form = reactive({
@@ -95,23 +113,23 @@ onMounted(loadGoals)
 
 <template>
   <div class="page">
-    <section class="hero">
-      <span class="eyebrow">Step 01 / 求职目标</span>
-      <h1>先说明你要投什么，再谈差距</h1>
-      <p class="hero__lead muted">
-        目标决定了后续一切判断的基准。首版聚焦
-        <strong>Java 后端实习 / 校招</strong>岗位族。
-      </p>
-    </section>
+    <BeautifulPageHeader
+      context="目标建立 · 步骤 1 / 3"
+      title="创建求职目标"
+      description="职径把一份岗位 JD 变成可执行的求职路径。目标决定后续所有判断的基准，首版聚焦 Java 后端实习与校招岗位族。"
+    >
+      <template #meta>
+        <span>岗位族</span>
+        <BeautifulStatus label="JAVA_BACKEND" tone="accent" />
+        <span aria-hidden="true">·</span>
+        <span>带 <span class="req">*</span> 的字段为必填</span>
+        <span aria-hidden="true">·</span>
+        <span>数据来自本地后端接口</span>
+      </template>
+    </BeautifulPageHeader>
 
-    <div class="layout">
-      <!-- 表单 -->
-      <section class="surface surface--lit card">
-        <header class="card__head">
-          <h2>创建求职目标</h2>
-          <p class="dim">带 <span class="req">*</span> 的字段为必填。</p>
-        </header>
-
+    <div class="bui-form-col form-col">
+      <section class="surface card">
         <form class="form" @submit.prevent="submit">
           <div class="field">
             <label class="field__label" for="goal-name">
@@ -126,6 +144,7 @@ onMounted(loadGoals)
               placeholder="例如：Java 后端开发实习生（2026 届）"
               autocomplete="off"
             />
+            <span class="field__hint">用于区分不同投递方向，之后可随时修改。</span>
           </div>
 
           <div class="grid">
@@ -182,13 +201,8 @@ onMounted(loadGoals)
                 max="168"
                 placeholder="20"
               />
+              <span class="field__hint">用于计算学习计划的时间预算。</span>
             </div>
-          </div>
-
-          <div class="readonly">
-            <span class="field__label">岗位族</span>
-            <span class="tag tag--accent">JAVA_BACKEND</span>
-            <span class="field__hint">首版固定为 Java 后端岗位族。</span>
           </div>
 
           <p v-if="errorMessage" class="alert" role="alert">
@@ -197,42 +211,53 @@ onMounted(loadGoals)
           </p>
 
           <div class="actions">
-            <button class="btn btn--primary" type="submit" :disabled="submitting">
+            <BeautifulButton variant="primary" type="submit" :disabled="submitting">
               {{ submitting ? '创建中…' : '创建并继续导入 JD' }}
-            </button>
+            </BeautifulButton>
           </div>
         </form>
       </section>
 
-      <!-- 已有目标 -->
-      <aside class="surface card">
-        <header class="card__head">
-          <h2>已有目标</h2>
-          <p class="dim">继续上次的进度。</p>
-        </header>
-
-        <div v-if="loadingGoals" class="list">
-          <div v-for="n in 3" :key="n" class="skeleton item-skeleton"></div>
+      <!-- 已有目标：从右侧栏移到表单下方，避免与主表单争夺注意力 -->
+      <section class="bui-section">
+        <div class="bui-section__head">
+          <h2 class="bui-section__title">已有目标</h2>
+          <span class="bui-section__note">继续上次的进度</span>
         </div>
 
-        <p v-else-if="existingGoals.length === 0" class="empty dim">
-          还没有目标。创建第一个后可在这里回到流程。
-        </p>
+        <div v-if="loadingGoals" class="loading-row">
+          <BeautifulLoadingState label="正在读取已有目标" variant="Dots" />
+        </div>
+
+        <BeautifulEmptyState
+          v-else-if="existingGoals.length === 0"
+          title="还没有求职目标"
+          reason="目标列表为空，因此这里没有可继续的进度。创建第一个目标后，它会出现在这里。"
+          required-input="一个岗位方向（首版固定为 Java 后端岗位族）"
+        />
 
         <ul v-else class="list">
           <li v-for="goal in existingGoals" :key="goal.id" class="item">
             <RouterLink :to="`/goals/${goal.id}/jd`" class="item__link">
-              <span class="item__name">{{ goal.name }}</span>
-              <span class="item__meta dim mono">{{ formatDate(goal.createdAt) }}</span>
+              <BeautifulTaskRow
+                expanded
+                :title="goal.name"
+                :meta="`${goal.jobFamily} · 创建于 ${formatDate(goal.createdAt)}`"
+                status="继续"
+                tone="accent"
+              >
+                <div class="item__tags">
+                  <span v-if="goal.city" class="bui-chip">{{ goal.city }}</span>
+                  <span v-if="goal.employmentType" class="bui-chip">{{ goal.employmentType }}</span>
+                  <span v-if="goal.graduationYear" class="bui-chip">
+                    {{ goal.graduationYear }} 届
+                  </span>
+                </div>
+              </BeautifulTaskRow>
             </RouterLink>
-            <div class="item__tags">
-              <span class="tag">{{ goal.jobFamily }}</span>
-              <span v-if="goal.city" class="tag">{{ goal.city }}</span>
-              <span v-if="goal.employmentType" class="tag">{{ goal.employmentType }}</span>
-            </div>
           </li>
         </ul>
-      </aside>
+      </section>
     </div>
   </div>
 </template>
@@ -241,45 +266,17 @@ onMounted(loadGoals)
 .page {
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: 24px;
 }
 
-.hero {
+.form-col {
   display: flex;
   flex-direction: column;
-  gap: 9px;
-  max-width: 720px;
-}
-
-.hero__lead {
-  font-size: 14.5px;
-}
-
-.hero__lead strong {
-  color: var(--color-text);
-  font-weight: 600;
-}
-
-.layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
-  gap: 22px;
-  align-items: start;
+  gap: 24px;
 }
 
 .card {
-  padding: 24px;
-}
-
-.card__head {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 20px;
-}
-
-.card__head p {
-  font-size: 12.5px;
+  padding: 22px;
 }
 
 .form {
@@ -292,14 +289,6 @@ onMounted(loadGoals)
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
-}
-
-.readonly {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  padding-top: 4px;
 }
 
 .req {
@@ -328,10 +317,15 @@ onMounted(loadGoals)
 }
 
 .actions {
-  padding-top: 4px;
+  display: flex;
+  justify-content: flex-end;
 }
 
-/* ---------- 列表 ---------- */
+/* ---------- 已有目标 ---------- */
+.loading-row {
+  padding: 6px 0;
+}
+
 .list {
   display: flex;
   flex-direction: column;
@@ -341,60 +335,27 @@ onMounted(loadGoals)
   list-style: none;
 }
 
-.item {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-control);
-  background-color: var(--color-surface-glass-strong);
-  transition:
-    border-color var(--dur-fast) var(--ease-out-expo),
-    background-color var(--dur-fast) var(--ease-out-expo),
-    transform var(--dur-fast) var(--ease-out-expo);
-}
-
-.item:hover {
-  transform: translateY(-1px);
-  border-color: var(--color-border-strong);
-  background-color: var(--color-surface);
-}
-
 .item__link {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 12px 14px 8px;
+  display: block;
+  border-radius: var(--radius-control);
 }
 
-.item__name {
-  font-size: 13.5px;
-  font-weight: 550;
-  color: var(--color-text);
+.item__link :deep(.bui-task-row) {
+  transition: border-color var(--dur-fast) ease;
 }
 
-.item__meta {
-  font-size: 11px;
+.item__link:hover :deep(.bui-task-row) {
+  border-color: var(--color-border-strong);
 }
 
 .item__tags {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
-  padding: 0 14px 12px;
+  flex-wrap: wrap;
 }
 
-.item-skeleton {
-  height: 74px;
-}
-
-.empty {
-  font-size: 12.5px;
-  padding: 8px 0;
-}
-
-@media (max-width: 900px) {
-  .layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
+@media (max-width: 767px) {
   .grid {
     grid-template-columns: minmax(0, 1fr);
   }

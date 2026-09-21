@@ -2,6 +2,8 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppIcon from '@/components/AppIcon.vue'
+import BrandMark from '@/components/BrandMark.vue'
+import BeautifulStatus from '@/components/BeautifulStatus.vue'
 import type { IconName } from '@/components/icons'
 
 const route = useRoute()
@@ -11,14 +13,17 @@ const goalId = computed(() => String(route.params.goalId ?? ''))
 /**
  * 一级导航（shared_docs/19-ui-design-system.md §3.1 固定 6 项）。
  *
- * 尚未实现的路由不伪造跳转：渲染为不可用状态，并给出非颜色线索，
- * 遵守 §2.4 状态必须诚实 与 §14 不得用 Mock 冒充真实集成。
+ * 「能力与证据」必须挂在某个求职目标下，因此没有 goalId 时不伪造跳转，
+ * 渲染为不可用状态并给出非颜色线索（§2.4 状态必须诚实、§14 不得用 Mock 冒充真实集成）。
+ * 其余四项均有独立路由；这些页面尚无后端接口，页内使用明确标识的演示数据。
  */
 interface PrimaryNav {
   key: string
   label: string
   icon: IconName
   to: string | null
+  /** `to` 为 null 时的真实原因。不可用时必须说明为什么，而不是一律写「尚未开放」。 */
+  disabledReason?: string
 }
 
 const primaryNav = computed<PrimaryNav[]>(() => [
@@ -28,14 +33,22 @@ const primaryNav = computed<PrimaryNav[]>(() => [
     label: '能力与证据',
     icon: 'layers',
     to: goalId.value ? `/goals/${goalId.value}/capability` : null,
+    disabledReason: '需先创建目标',
   },
-  { key: 'jobs', label: '岗位发现', icon: 'briefcase', to: null },
-  { key: 'assessment', label: '测评与面试', icon: 'clipboard-check', to: null },
-  { key: 'learning', label: '学习计划', icon: 'book-open', to: null },
-  { key: 'resume', label: '简历建议', icon: 'file-text', to: null },
+  { key: 'jobs', label: '岗位发现', icon: 'briefcase', to: '/discovery' },
+  { key: 'assessment', label: '测评与面试', icon: 'clipboard-check', to: '/assessment' },
+  { key: 'learning', label: '学习计划', icon: 'book-open', to: '/learning' },
+  { key: 'resume', label: '简历建议', icon: 'file-text', to: '/resume' },
 ])
 
 const activeKey = computed(() => String(route.name ?? ''))
+
+/**
+ * 目标建立流程条只属于「目标建立」这条流程（§5.4），
+ * 在岗位发现等一级页面上显示会把两个层级混在一起，因此按路由收敛。
+ */
+const FLOW_ROUTE_KEYS = ['goal-create', 'jd-import', 'capability-map']
+const showFlowbar = computed(() => FLOW_ROUTE_KEYS.includes(activeKey.value))
 
 /**
  * 目标建立流程（§5.4 多步骤流程需显示当前步骤与可返回性）。
@@ -153,10 +166,10 @@ onBeforeUnmount(() => {
     <header class="topnav">
       <div class="topnav__inner">
         <RouterLink to="/goals/new" class="brand">
-          <span class="brand__mark" aria-hidden="true"></span>
+          <BrandMark :size="19" variant="solid" />
           <span class="brand__text">
             <strong>职径</strong>
-            <span class="brand__sub">Jobprep</span>
+            <span class="brand__sub">JOBPREP</span>
           </span>
         </RouterLink>
 
@@ -167,6 +180,7 @@ onBeforeUnmount(() => {
               :to="item.to"
               class="navlink"
               :class="{ 'navlink--active': item.key === activeKey }"
+              :aria-current="item.key === activeKey ? 'page' : undefined"
             >
               <AppIcon :name="item.icon" />
               <span class="txt">{{ item.label }}</span>
@@ -175,11 +189,11 @@ onBeforeUnmount(() => {
               v-else
               class="navlink navlink--disabled"
               aria-disabled="true"
-              :title="`${item.label}（尚未开放）`"
+              :title="`${item.label}（${item.disabledReason ?? '尚未开放'}）`"
             >
               <AppIcon :name="item.icon" />
               <span class="txt">{{ item.label }}</span>
-              <span class="sr-only">（尚未开放）</span>
+              <span class="sr-only">（{{ item.disabledReason ?? '尚未开放' }}）</span>
             </span>
           </template>
         </nav>
@@ -209,7 +223,7 @@ onBeforeUnmount(() => {
             <span class="sr-only">（账户体系尚未开放）</span>
           </span>
 
-          <span class="tag tag--warn" title="当前页面使用演示数据，未连接真实后端">演示数据</span>
+          <BeautifulStatus label="演示数据" tone="warn" title="当前页面使用演示数据，未连接真实后端" />
 
           <!-- 移动端导航入口（§3.3）：仅在 <768px 显示，桌面档隐藏 -->
           <button
@@ -258,14 +272,20 @@ onBeforeUnmount(() => {
               :to="item.to"
               class="drawer__link"
               :class="{ 'drawer__link--active': item.key === activeKey }"
+              :aria-current="item.key === activeKey ? 'page' : undefined"
             >
               <AppIcon :name="item.icon" :size="18" :stroke-width="1.9" />
               <span class="drawer__link-text">{{ item.label }}</span>
             </RouterLink>
-            <span v-else class="drawer__link drawer__link--disabled" aria-disabled="true">
+            <span
+              v-else
+              class="drawer__link drawer__link--disabled"
+              aria-disabled="true"
+              :title="item.disabledReason"
+            >
               <AppIcon :name="item.icon" :size="18" :stroke-width="1.9" />
               <span class="drawer__link-text">{{ item.label }}</span>
-              <span class="drawer__flag">尚未开放</span>
+              <span class="drawer__flag">{{ item.disabledReason ?? '尚未开放' }}</span>
             </span>
           </template>
         </nav>
@@ -276,8 +296,8 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- 目标建立子流程（§5.4）：非玻璃层，避免第二层大面积模糊 -->
-    <div class="flowbar">
+    <!-- 目标建立子流程（§5.4）：只在这条流程的页面上出现，避免与一级导航混层 -->
+    <div v-if="showFlowbar" class="flowbar">
       <div class="flowbar__inner">
         <span class="flowbar__label">目标建立</span>
         <nav class="steps" aria-label="目标建立流程">
@@ -326,18 +346,10 @@ onBeforeUnmount(() => {
   top: 0;
   z-index: 40;
   height: 70px;
-  background-color: var(--color-surface-glass);
-  border-bottom: 1px solid var(--color-border-glass);
+  /* §4.5：顶栏使用不透明表面 + 细边界，不再声明 backdrop-filter 合成层 */
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
   box-shadow: var(--shadow-nav);
-  /* §4.5：只为随滚动重绘的固定层声明合成层，卡片不逐个声明 */
-  will-change: backdrop-filter;
-}
-
-@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
-  .topnav {
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  }
 }
 
 .topnav__inner {
@@ -350,48 +362,31 @@ onBeforeUnmount(() => {
   padding: 0 32px;
 }
 
-/* ---------- 品牌标记（渐变仅限此处与主按钮，§4.1） ---------- */
+/* ---------- 品牌标记（logo 由 BrandMark.vue 自绘几何路径承载） ---------- */
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   flex-shrink: 0;
-}
-
-.brand__mark {
-  position: relative;
-  width: 34px;
-  height: 34px;
-  border-radius: 11px;
-  background: var(--color-primary-gradient);
-  box-shadow: var(--shadow-brand);
-}
-
-.brand__mark::after {
-  content: '';
-  position: absolute;
-  inset: 10px;
-  border-radius: 4px;
-  background-color: var(--color-surface);
 }
 
 .brand__text {
   display: flex;
   flex-direction: column;
-  line-height: 1.15;
+  line-height: 1.1;
 }
 
 .brand__text strong {
-  font-size: 15.5px;
+  font-size: 15px;
   font-weight: 800;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.02em;
 }
 
 .brand__sub {
-  font-size: 10.5px;
-  font-weight: 500;
+  font-size: 9px;
+  font-weight: 700;
   color: var(--color-text-subtle);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.18em;
 }
 
 /* ---------- 一级导航 ---------- */
@@ -781,4 +776,50 @@ onBeforeUnmount(() => {
     padding-bottom: 44px;
   }
 }
+
+/* Beautiful UI 外壳适配：不透明表面 + hairline 边界（§4.5 默认不透明表面）。
+   尺寸一律沿用 §3.2 / §3.3 / §4.4 的规定值，不在此处另立一套紧凑刻度。 */
+.topnav {
+  background: var(--color-surface);
+  border-bottom-color: var(--color-border);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* 品牌副标题：产品名视觉改造；字号沿用原值，仅提高字重与字距 */
+.brand__sub {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+
+.navlink--active {
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  box-shadow: inset 0 0 0 1px var(--color-border-brand);
+}
+
+.search,
+.account,
+.icon-btn {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+/* §4.4：图标按钮可视尺寸沿用 40px，点击区外扩 2px 补足 44×44px */
+.icon-btn {
+  position: relative;
+}
+
+.icon-btn::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+}
+
+/* §1：不使用装饰性渐变，步骤分隔线用纯色 */
+.steps__sep { background: var(--color-border-strong); }
+
+
 </style>
