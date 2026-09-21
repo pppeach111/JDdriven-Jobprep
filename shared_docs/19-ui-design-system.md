@@ -10,17 +10,17 @@
 
 首版设计参数：
 
-- 视觉变化度：5/10，以稳定一致为先，允许统一的玻璃拟态质感；
+- 视觉变化度：4/10，以稳定一致为先，采用 Beautiful UI 的 compact、细边界和任务状态语言；
 - 动效强度：2/10，仅用于反馈和状态变化；
 - 信息密度：7/10，桌面端充分利用空间，移动端主动降维；
 - 主题：首版只要求高质量浅色主题，不为展示效果强行增加深色主题；
-- 风格：淡紫调中性底色、单一靛蓝紫强调色、清楚的层级、常态柔和阴影、玻璃拟态卡片；渐变仅限主按钮与数据图形，不做装饰性铺陈；
+- 风格：冷灰中性底色、单一靛蓝紫强调色、hairline 边界、紧凑控件、轻量层叠阴影和明确状态行；不使用装饰性渐变；
 - 核心感受：可信、清楚、可行动，而不是“炫技”或“AI 感”。
 
-> **2026-09-16 修订**：视觉风格改为参照 Avenra AI Dashboard（浅色 + 靛蓝紫 + 玻璃拟态 + 大圆角 + 顶部横向导航），
-> 由用户在静态预览稿 `frontend/prototype.html` 上确认。原“单一墨绿色强调色、少阴影、无渐变”参数作废。
-> 变更理由、影响页面与令牌迁移方式见 `18-current-state-and-next-actions.md` 第 5 节 A 与第 10 节，
-> 本文件末尾 §18 为修订台账。
+> **2026-09-21 修订**：视觉方向改为参照 [Beautiful UI](https://www.beautifului.dev/) 的组件信息结构，
+> 在 Vue 3 中采用本地适配，而不是把 React/Tailwind registry 直接引入运行时。核心原则是中性画布、细边界、紧凑控制、任务行、上下文卡和可核验状态。
+> 原先的大面积玻璃拟态和装饰性渐变不再作为默认组件表面；仅保留单一靛蓝紫品牌色与业务状态色。
+> 变更理由、影响页面与令牌迁移方式见 `18-current-state-and-next-actions.md` 的 CP-010 记录，本文件末尾 §18 为修订台账。
 
 ## 2. 设计原则
 
@@ -177,11 +177,11 @@ font-family: "Plus Jakarta Sans", "PingFang SC", "Microsoft YaHei", "Noto Sans C
 - 页面左右留白：桌面 32px，平板 24px，移动 16px；
 - 网格：桌面 12 列/24px 间隙，平板 8 列/16px，移动 4 列/12px；
 - 圆角令牌：
-  - `--radius-control`：12px（输入框、事实格、差距行、日期格）；
-  - `--radius-icon`：12～14px（图标容器）；
-  - `--radius-card`：24px（卡片）；
-  - `--radius-panel`：28px（行动条、大面板）；
-  - 标签、状态标记、按钮、搜索框统一使用全圆角 `--radius-pill: 999px`；
+  - `--radius-control`：8px（输入框、事实格、差距行、日期格）；
+  - `--radius-icon`：8px（图标容器）；
+  - `--radius-card`：14px（卡片）；
+  - `--radius-panel`：18px（行动条、大面板）；
+  - 状态标记使用 6px 紧凑圆角；按钮、输入框和搜索框使用 `--radius-control`，仅需要强调连续性的筛选器才使用 `--radius-pill: 999px`；
 - 阴影令牌（Layer 3，只允许引用令牌，不写内联阴影）：
 
   | 令牌 | 值 | 用途 |
@@ -205,16 +205,27 @@ font-family: "Plus Jakarta Sans", "PingFang SC", "Microsoft YaHei", "Noto Sans C
 - 标签和状态标记高度 24～28px，不用于承载长句；
 - 表格默认行高 48～50px，信息较多时允许 56px，不用固定高度裁切内容。
 
-### 4.5 玻璃拟态使用规范
+### 4.5 表面与 Beautiful UI 适配规范
 
-玻璃拟态是本项目已确认的质感基线（2026-09-16 用户确认保留），但必须满足以下约束；任一不满足即退回不透明底色：
+Beautiful UI 的 React registry 仅作为结构和交互参考，本项目不把它作为运行时依赖。Vue 组件默认使用不透明表面和细边界；如未来页面确需透明层，必须满足以下约束，任一不满足即退回不透明底色：
 
-- **嵌套**：禁止“玻璃嵌套玻璃”。玻璃卡片内的子块（事实格、差距行、表格、日期格）使用 `--color-surface-glass-strong`、`--color-surface-subtle` 或纯色底，同一卡片内不得出现第二层 `backdrop-filter`；同级并列的卡片不受限制；
+- **嵌套**：禁止“透明层嵌套透明层”。卡片内的子块（事实格、差距行、表格、日期格）使用 `--color-surface-glass-strong`、`--color-surface-subtle` 或纯色底，同一卡片内不得出现第二层 `backdrop-filter`；同级并列的卡片不受限制；
 - **参数**：`backdrop-filter: blur(18px) saturate(170%)`；玻璃底色 alpha 取 `.62～.90`；描边使用 `--color-border-glass`；
 - **性能**：不做大面积模糊（长列表、横向滚动容器内改为不透明底）；`will-change` 只在**需要随滚动重绘的固定层**（如 sticky 顶部导航、抽屉）声明，不为每张卡片逐个声明——合成层过多反而增加显存与绘制开销；
 - **对比度**：玻璃层上的文本必须按**最不利的底层色**核算，正文与交互文本达 WCAG AA（4.5:1）。背景光晕（`--color-canvas-tint-*`）与玻璃叠加后的实际底色若使对比度不达标，改为不透明底；
 - **降级**：用 `@supports not (backdrop-filter: blur(1px))` 回落到 `--color-surface` 纯色，层级与可读性不受影响；
 - **加载态**：整页加载不得对页面使用模糊或低透明度遮罩（延续 §12）。
+
+### 4.6 Beautiful UI 组件接入规则
+
+- **默认优先级**：任何前端页面设计、组件实现或布局调整，都必须先检查 `frontend/src/components/Beautiful*.vue`。决策顺序固定为“直接复用 → 组合复用 → 扩展共享组件 → 新增共享适配”；只要已有组件能够表达业务语义，就不得在页面内建立平行实现；
+- 接入流程固定为：阅读 registry 示例 → 提取信息结构和状态语义 → 编写 Vue 3 本地适配 → 接入现有 API/路由 → 在四档视口验收；
+- 组件风格优先选择 Beautiful UI 的 `Loading State`、`Context Cards`、`Task Rows`、`Recommendation Card`、`Filter Table` 和 `Records Table` 语言；本项目已落地为 `BeautifulLoadingState`、`BeautifulContextCard`、`BeautifulTaskRow`、`BeautifulStatus`、`BeautifulButton`、`BeautifulPageHeader` 和 `BeautifulEmptyState`；
+- `Chat`、`Prompt Bar`、`Sidebar Nav` 不作为核心产品壳，避免把证据工作台误导成聊天应用；
+- registry 的 React/TSX 代码不可直接复制到 Vue 模板，必须保留业务语义、键盘可用性、API 字段和 `UNKNOWN` 状态；
+- 适配组件只承载视觉与状态表达，不能生成未由接口返回的进度、等级、置信度或推荐结论。
+- 每次前端交付必须列出复用或新增的 `Beautiful*.vue` 组件；未复用现有组件时，必须记录无法覆盖的业务语义和新增共享适配的理由。
+- 产品名标记由 `BrandMark.vue` 的自绘几何路径承载（logo 不属图标库范畴，不因此新增 Lucide 图标）；一级页面的标题区、区块、列表、空状态与能力矩阵外壳统一由 `theme.css` 的「页面骨架」段落承载，页面不得自建平行的圆角、字号或阴影刻度。
 
 ## 5. 布局模式
 
@@ -501,5 +512,8 @@ CP-010 页面至少检查以下视口：
 
 | 日期 | 修订范围 | 变更理由 | 留痕位置 |
 |---|---|---|---|
+| 2026-09-21 | §4.6 组件映射新增 `BeautifulPageHeader`、`BeautifulEmptyState`，并明确 `BrandMark` 与「页面骨架」样式的归属；§3.2 顶栏高度与 §4.4 控件尺寸回归文档值；§3.3 移动端数据表改为分组列表；新增 4 条一级路由；内容区断点由 900px 收敛到外壳断点体系 | 用户要求新建 5 个页面初版界面、重做产品名与图标并优先复用本地组件。验收中发现两处与本规范不一致：①外壳「紧凑化」把顶栏压到 64px/60px、控件压到 34px，违反 §3.2 的 70px、§3.3 的 62px 与 §4.4 的 40px 及图标按钮 ≥36px；②能力矩阵在 390px 下依赖横向滚动，违反 §3.3「数据表不默认依赖横向滚动」。二者一并按本规范修正，并补齐导航当前页 `aria-current` 与表头排序按钮的 24px 最小点击区 | `18-current-state-and-next-actions.md` CP-010 追加记录；实现见 `frontend/src/components/BeautifulPageHeader.vue`、`BeautifulEmptyState.vue`、`BrandMark.vue`、`frontend/src/styles/theme.css`「页面骨架」段 |
+| 2026-09-21 | §4.6 Beautiful UI 默认复用优先级；项目代理规则与 `careerpath-ui` 技能 | 确保后续 Codex 或 CodeArts 进行页面、组件和布局设计时优先复用本地适配，避免页面内重复建立平行组件 | 根 `AGENTS.md`；`tools/codearts-skills/careerpath-ui/SKILL.md`；`18-current-state-and-next-actions.md` CP-010 追加记录 |
+| 2026-09-21 | §1 视觉方向；§4.3 紧凑圆角；§4.5 表面规范；§4.6（新增）Beautiful UI 接入规则；三页共享组件映射 | 用户要求以 beautifului.dev 的组件设计重构现有 Vue 前端；保留 Vue 3 + TypeScript 与现有 API，不直接引入 React/Tailwind 运行时 | `18-current-state-and-next-actions.md` CP-010 追加记录；实现见 `frontend/src/components/Beautiful*.vue` |
 | 2026-09-16 | §1 视觉参数；§2.3 品牌命名；§3.2 / §3.3 导航外壳；§4.1 颜色令牌表与禁用条款；§4.2 字体；§4.3 圆角与阴影令牌；§4.4 表格行高；§4.5（新增）玻璃拟态使用规范；§9 环形进度边界；§12 性能约束；§13 图标家族固定为 Lucide；§16 验收清单 | 用户确认改用 Avenra AI Dashboard 视觉风格（浅色 + 靛蓝紫 + 玻璃拟态 + 大圆角 + 顶部横向导航），原墨绿色 / 无渐变 / 左侧导航 / 少阴影规则作废 | `18-current-state-and-next-actions.md` 第 5 节 A、第 10 节；预览稿 `frontend/prototype.html` |
 | 2026-09-16 | §4.1 新增 `--color-scrim` 遮罩令牌 | 补齐本文 §3.3 要求的移动端导航抽屉；遮罩色须有语义令牌承载，否则组件内只能写颜色字面量，破坏令牌单一来源 | `18-current-state-and-next-actions.md` 第 5 节 A、第 10 节；实现见 `frontend/src/App.vue` |

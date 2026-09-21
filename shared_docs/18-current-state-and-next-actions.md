@@ -380,3 +380,91 @@ Python 标准库 `ipaddress.is_private` 不覆盖 `100.64.0.0/10`（RFC 6598 运
 ```
 
 > 注：`frontend/` 目录整体与 `shared_docs/19-ui-design-system.md` 目前均为 git 未跟踪状态，本轮改动尚未提交。
+
+### 追加记录（2026-09-21 Beautiful UI 本地适配）
+
+```text
+日期：2026-09-21
+任务：CP-010 前端工作台（Beautiful UI 适配）
+已完成：
+  - 依据 beautifului.dev 的 Loading State、Context Cards、Task Rows、Status 和 compact Button 语言，新增 Vue 本地适配组件
+  - GoalCreateView 接入 BeautifulButton、BeautifulStatus、BeautifulTaskRow，保留创建目标与已有目标 API 行为
+  - JdImportView 接入真实阶段 LoadingState、ContextCard、Status，保留原文引用、未知字段、警告与错误 traceId
+  - CapabilityMapView 接入 LoadingState、Status、ContextCard 与紧凑筛选，保留等级、置信度、差距和下一动作语义
+  - App.vue 外壳改为中性画布、细边界、紧凑导航与状态标记；不直接引入 React/Tailwind registry
+  - theme.css 增加 Beautiful UI Vue adaptation 令牌与共享样式，保留既有语义令牌以降低迁移风险
+  - 19-ui-design-system.md 增加 Beautiful UI 接入流程、组件映射和不透明表面规范
+未完成：
+  - 尚未完成真实后端联调下的截图回归；需要在 API 可用时检查正常、空、局部失败和长文本状态
+证据：
+  - frontend/src/components/Beautiful*.vue
+  - frontend/src/styles/theme.css
+  - frontend/src/views/GoalCreateView.vue、JdImportView.vue、CapabilityMapView.vue
+  - npm run typecheck 与 npm run build 均通过（60 modules transformed）
+阻塞：
+  - 无（本次不涉及数据库与契约）
+下一步：CP-010 视觉验收矩阵与真实 API 联调
+```
+
+### 追加记录（2026-09-21 Beautiful UI 优先复用规则）
+
+```text
+日期：2026-09-21
+任务：CP-010 前端工作台（Beautiful UI 复用约束固化）
+变更理由：
+  - 后续由 Codex 或 CodeArts 设计页面、组件和布局时，需要稳定优先复用已完成的 Beautiful UI Vue 本地适配，避免重复建立平行视觉组件
+已完成：
+  - 新增根 AGENTS.md，要求所有前端任务先检查 19 号设计系统与 Beautiful*.vue 组件
+  - careerpath-ui 技能增加 Beautiful UI 自动触发描述、组件决策顺序和交付说明
+  - 19-ui-design-system.md §4.6 固化“直接复用 → 组合复用 → 扩展共享组件 → 新增共享适配”的默认顺序
+  - 重新安装并启用本地 CodeArts 技能，careerpath-ui=true
+影响范围：
+  - 后续新增或修改的前端页面、共享组件和布局
+  - 不修改现有 API、路由、业务文案或运行时依赖
+迁移方式：
+  - 现有页面无需迁移；新任务直接引用 frontend/src/components/Beautiful*.vue
+  - 现有组件无法覆盖时，先扩展共享组件；确需新增时建立新的 Beautiful*.vue 并更新组件映射
+验证：
+  - careerpath-ui 技能通过 quick_validate.py 校验
+  - tools/codearts-skills 与 .codeartsdoer/skills 中的 careerpath-ui SKILL.md SHA-256 一致
+```
+### 追加记录（2026-09-21 一级页面初版界面与产品名重做）
+
+```text
+日期：2026-09-21
+任务：CP-010 前端工作台（一级页面初版界面 + 产品名重做）
+变更理由：
+  - 四个一级入口（岗位发现、测评与面试、学习计划、简历建议）此前只有占位导航，无法评审信息结构
+  - 用户反馈「求职目标」页的大字报横幅式标题不像产品界面，要求重做产品名与图标并自然融入页面
+  - 用户要求优先复用本地 Beautiful UI 适配组件
+已完成：
+  - 新增共享组件 BrandMark（自绘几何产品标记，不新增图标库依赖）、BeautifulPageHeader（§5.1 标题区结构）、BeautifulEmptyState（§8 三段式空状态）
+  - 扩展共享组件：BeautifulTaskRow 增加 expanded/muted 与默认插槽；BeautifulButton 增加 to 属性，吸收页面内的 RouterLink 平行实现
+  - GoalCreateView 去掉大字报 hero，改为标题区 + 720px 单列表单；已有目标列表下移到表单之后，消除原 900px 内容区断点
+  - CapabilityMapView 改为可排序能力矩阵（7 列、表头 aria-sort、未知值恒排末尾、行选中联动详情区）
+  - 新建 JobDiscoveryView、AssessmentView、LearningPlanView、ResumeAdviceView
+  - 路由新增 /discovery、/assessment、/learning、/resume；App.vue 一级导航 6 项全部接入真实路由，目标建立流程条只在目标建立流程显示
+影响范围：
+  - 一级导航、路由、顶栏与页面外壳；不修改现有 API、契约字段、评分规则或用户事实
+  - 四个新页面尚无后端接口，页内使用固定演示数据并在顶部保留「演示数据」标记（19 号 §14 允许的例外）
+迁移方式：
+  - 后端接口就绪后，把各页面演示数据替换为 client.ts 的真实调用，保留现有加载/空/失败/过期分支
+  - 未新增第三方前端依赖，未引入 React/Tailwind 运行时
+验证：
+  - npm run build 通过（vue-tsc -b && vite build）
+  - 四档视口（1440x900 / 1024x768 / 390x844 / 200% 缩放）共 28 个页面组合的 CDP 实测：横向溢出 0、对比度低于 AA 0、图标按钮小于 36px 0、点击目标小于 24px 0、文本竖排 0
+  - 断点命中正确（≥1024 显示一级导航；<1024 显示抽屉按钮且一级导航收起）；流程条只在目标建立相关路由出现
+  - 移动端抽屉 role=dialog / aria-modal / 焦点锁 / 背景滚动锁均通过，Esc 关闭后焦点归还触发按钮
+  - 能力矩阵成功态（CDP 拦截接口注入契约合法数据）验证排序 none→descending→ascending、未知值排末尾、行选中联动详情
+修复的验收缺陷：
+  - 顶栏高度与控件尺寸回归 §3.2 / §3.3 / §4.4（曾被外壳紧凑化压到 64px / 60px / 34px）
+  - 一级导航补齐 aria-current="page"；不可用项原因文案区分「尚未开放」与「需先创建目标」
+  - 能力矩阵在 <768px 转为分组列表（标签 + 值），不再横向滚动；修正 caption 因 table-caption 显示类型被压成逐字竖排
+  - 表头排序按钮补足 28px 最小点击高度（WCAG 2.2 AA 要求 24px）
+未完成：
+  - JdImportView 仍为旧版标题区样式，待统一到 BeautifulPageHeader
+  - 四个新页面的演示数据待后端接口就绪后替换为真实调用
+阻塞：
+  - 无（本次不涉及数据库与契约）
+下一步：统一 JdImportView 标题区；后端就绪后替换演示数据并做真实 API 回归
+```
