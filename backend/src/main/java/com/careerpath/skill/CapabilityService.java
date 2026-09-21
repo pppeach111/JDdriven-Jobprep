@@ -63,7 +63,7 @@ public class CapabilityService {
 
         for (Map.Entry<String, Integer> entry : requiredLevels.entrySet()) {
             String skillId = entry.getKey();
-            int requiredLevel = entry.getValue();
+            Integer requiredLevel = entry.getValue();
 
             UserSkillEstimate estimate = estimateRepository
                     .findByUserIdAndGoalIdAndSkillId(userId, goalId, skillId)
@@ -90,6 +90,12 @@ public class CapabilityService {
         return new CapabilityMap(CapabilityMap.SCHEMA_VERSION, goalId.toString(), cards);
     }
 
+    /**
+     * 汇总每个技能的岗位要求等级。
+     *
+     * <p>JD 未明确等级（requiredLevel 为 null）时不猜测默认值：若该技能存在任何明确等级，
+     * 取最高者；全部不明确时保留 null，由界面按"未知"呈现（14-contracts-and-schemas.md 第 1 节）。
+     */
     private Map<String, Integer> collectRequiredLevels(UUID goalId) {
         Map<String, Integer> required = new LinkedHashMap<>();
         for (JobRequirement requirement : requirementRepository.findByGoalId(goalId)) {
@@ -97,10 +103,24 @@ public class CapabilityService {
             if (skillId == null) {
                 continue;
             }
-            int level = requirement.getRequiredLevel() == null ? 3 : requirement.getRequiredLevel();
-            required.merge(skillId, level, Math::max);
+            Integer level = requirement.getRequiredLevel();
+            if (required.containsKey(skillId)) {
+                required.put(skillId, higherLevel(required.get(skillId), level));
+            } else {
+                required.put(skillId, level);
+            }
         }
         return required;
+    }
+
+    private static Integer higherLevel(Integer left, Integer right) {
+        if (left == null) {
+            return right;
+        }
+        if (right == null) {
+            return left;
+        }
+        return Math.max(left, right);
     }
 
     private UserSkillEstimate createPlaceholder(UUID userId, UUID goalId, String skillId) {
@@ -123,11 +143,11 @@ public class CapabilityService {
 
     private CapabilityMap.NextAction buildNextAction(String gapType) {
         if (GAP_EVIDENCE.equals(gapType)) {
-            return new CapabilityMap.NextAction("ASSESSMENT",
+            return new CapabilityMap.NextAction("ASSESSMENT", null,
                     "该能力缺少可验证证据，建议完成一次自适应测评以建立基线");
         }
         if (GAP_KNOWLEDGE.equals(gapType)) {
-            return new CapabilityMap.NextAction("MICRO_PRACTICE",
+            return new CapabilityMap.NextAction("MICRO_PRACTICE", null,
                     "存在知识或实践差距，建议通过学习任务补齐并复测");
         }
         return null;

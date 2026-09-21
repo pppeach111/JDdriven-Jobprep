@@ -32,6 +32,10 @@ public record CapabilityMap(
     ) {
     }
 
-    public record NextAction(String type, String reason) {
+    /**
+     * 下一动作，结构对齐 14-contracts-and-schemas.md 第 5 节。
+     * taskId 在学习任务模块落地前为 null，表示"尚未生成可执行任务"，不得用占位 ID 冒充。
+     */
+    public record NextAction(String type, String taskId, String reason) {
     }
 }

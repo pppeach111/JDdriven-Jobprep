@@ -283,12 +283,12 @@ class RuleBasedJdParserTest {
         }
 
         @Test
-        @DisplayName("未出现等级词时默认 requiredLevel 3")
-        void defaultLevel() {
+        @DisplayName("未出现等级词时 requiredLevel 为 null，不得猜成\"熟悉\"对应的 3")
+        void levelIsNullWhenNoLevelWord() {
             givenSkills(skill("redis-cache-design", "Redis 缓存设计", "Redis"));
             JdParseResult result = parser.parse("使用 Redis 缓存设计", "jd_033");
 
-            assertEquals(3, bySkill(result, "redis-cache-design").requiredLevel());
+            assertNull(bySkill(result, "redis-cache-design").requiredLevel());
         }
 
         @Test
@@ -308,13 +308,95 @@ class RuleBasedJdParserTest {
         }
 
         @Test
-        @DisplayName("上下文中出现 优先/加分/更佳 时标记为 PREFERRED")
+        @DisplayName("上下文中出现 优先/更佳 时标记为 PREFERRED")
         void preferredMarkers() {
             givenSkills(skill("redis-cache-design", "Redis 缓存设计", "Redis"));
-            for (String marker : List.of("优先", "加分", "更佳")) {
+            for (String marker : List.of("优先", "更佳")) {
                 JdParseResult result = parser.parse("有 Redis 缓存设计经验者" + marker, "jd_035");
                 assertEquals("PREFERRED", bySkill(result, "redis-cache-design").type(), "标记=" + marker);
             }
+        }
+
+        @Test
+        @DisplayName("\"加分\"属于 BONUS，与 PREFERRED 区分")
+        void bonusMarkers() {
+            givenSkills(skill("redis-cache-design", "Redis 缓存设计", "Redis"));
+
+            for (String marker : List.of("加分", "nice to have")) {
+                JdParseResult result = parser.parse("有 Redis 缓存设计经验者" + marker, "jd_044");
+                assertEquals("BONUS", bySkill(result, "redis-cache-design").type(), "标记=" + marker);
+            }
+        }
+
+        @Test
+        @DisplayName("等级词不跨分句串扰：\"精通 Java，熟悉 Spring Boot、MyBatis\" 各自定级")
+        void levelDoesNotBleedAcrossClauses() {
+            givenSkills(
+                    skill("java-basics", "Java 基础与集合", "Java基础,Java语法,集合框架,Java"),
+                    skill("spring-boot", "Spring Boot", "SpringBoot"),
+                    skill("persistence-mybatis", "持久层与 ORM", "MyBatis"));
+
+            JdParseResult result = parser.parse("精通 Java，熟悉 Spring Boot、MyBatis", "jd_070");
+
+            assertEquals(4, bySkill(result, "java-basics").requiredLevel());
+            assertEquals(3, bySkill(result, "spring-boot").requiredLevel());
+            assertEquals(3, bySkill(result, "persistence-mybatis").requiredLevel(),
+                    "省略等级词的并列项应沿用同组前文等级，而非被\"精通\"抬高");
+        }
+
+        @Test
+        @DisplayName("同分句内的等级词作用于该分句的全部技能")
+        void levelWordAppliesToListInSameClause() {
+            givenSkills(
+                    skill("java-basics", "Java 基础与集合", "Java基础,Java语法,集合框架,Java"),
+                    skill("redis-cache-design", "Redis 缓存设计", "Redis"));
+
+            JdParseResult result = parser.parse("精通 Java 和 Redis 缓存设计", "jd_071");
+
+            assertEquals(4, bySkill(result, "java-basics").requiredLevel());
+            assertEquals(4, bySkill(result, "redis-cache-design").requiredLevel());
+        }
+
+        @Test
+        @DisplayName("技能名自带的等级词不参与判断：\"Java 基础与集合\"中的\"基础\"不使其降为 2")
+        void levelWordInsideSkillNameIsIgnored() {
+            givenSkills(skill("java-basics", "Java 基础与集合", "Java基础"));
+
+            JdParseResult result = parser.parse("熟悉 Java 基础与集合", "jd_072");
+
+            assertEquals(3, bySkill(result, "java-basics").requiredLevel());
+        }
+
+        @Test
+        @DisplayName("非顿号承接的新分句不继承等级：原文未给等级时为 null")
+        void newSentenceDoesNotInheritLevel() {
+            givenSkills(
+                    skill("docker-container", "Docker 与容器化", "Docker,容器"),
+                    skill("microservice", "微服务架构", "微服务"));
+
+            JdParseResult result = parser.parse("了解 Docker；有微服务架构经验者优先", "jd_074");
+
+            assertEquals(2, bySkill(result, "docker-container").requiredLevel());
+            assertNull(bySkill(result, "microservice").requiredLevel(),
+                    "分号后的新分句不得沿用前一等级");
+            assertEquals("PREFERRED", bySkill(result, "microservice").type());
+        }
+
+        @Test
+        @DisplayName("嵌套关键词只保留最长命中：Spring Boot 不再额外产出 Spring")
+        void longestKeywordWinsOverNestedKeyword() {
+            givenSkills(
+                    skill("spring-framework", "Spring 框架", "Spring,IoC,AOP"),
+                    skill("spring-boot", "Spring Boot", "SpringBoot,自动配置"));
+
+            JdParseResult result = parser.parse("熟悉 Spring Boot 自动配置", "jd_073");
+
+            assertTrue(result.requirements().stream()
+                            .noneMatch(r -> "spring-framework".equals(r.skillId())),
+                    "被更长关键词覆盖的短命中不应产出要求");
+            JdParseResult.RequirementView boot = bySkill(result, "spring-boot");
+            assertEquals("Spring Boot", boot.sourceQuote());
+            assertEquals(3, boot.requiredLevel());
         }
 
         @Test
