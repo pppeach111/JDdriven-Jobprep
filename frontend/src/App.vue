@@ -51,6 +51,16 @@ const FLOW_ROUTE_KEYS = ['goal-create', 'jd-import', 'capability-map']
 const showFlowbar = computed(() => FLOW_ROUTE_KEYS.includes(activeKey.value))
 
 /**
+ * 「演示数据」标签只属于尚未接入后端的四个一级页面。
+ *
+ * 目标建立流程（求职目标 / 目标 JD / 能力图谱）读取的是真实接口，
+ * 在这些页面上挂「演示数据」属于错误标注（§2.4 状态必须诚实），
+ * 因此顶栏标签按路由收敛，而不是全局常驻。
+ */
+const DEMO_ROUTE_KEYS = ['jobs', 'assessment', 'learning', 'resume']
+const showDemoBadge = computed(() => DEMO_ROUTE_KEYS.includes(activeKey.value))
+
+/**
  * 目标建立流程（§5.4 多步骤流程需显示当前步骤与可返回性）。
  * 这是"求职目标"内部的子流程，与上面的一级导航不是同一层级。
  */
@@ -223,7 +233,12 @@ onBeforeUnmount(() => {
             <span class="sr-only">（账户体系尚未开放）</span>
           </span>
 
-          <BeautifulStatus label="演示数据" tone="warn" title="当前页面使用演示数据，未连接真实后端" />
+          <BeautifulStatus
+            v-if="showDemoBadge"
+            label="演示数据"
+            tone="warn"
+            title="当前页面使用演示数据，未连接真实后端"
+          />
 
           <!-- 移动端导航入口（§3.3）：仅在 <768px 显示，桌面档隐藏 -->
           <button

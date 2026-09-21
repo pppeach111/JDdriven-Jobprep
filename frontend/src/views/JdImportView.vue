@@ -5,6 +5,7 @@ import { ApiError, api } from '@/api/client'
 import BeautifulButton from '@/components/BeautifulButton.vue'
 import BeautifulContextCard from '@/components/BeautifulContextCard.vue'
 import BeautifulLoadingState from '@/components/BeautifulLoadingState.vue'
+import BeautifulPageHeader from '@/components/BeautifulPageHeader.vue'
 import BeautifulStatus from '@/components/BeautifulStatus.vue'
 import ConfidenceBadge from '@/components/ConfidenceBadge.vue'
 import type { JdParseResult, RequirementType, RequirementView } from '@/api/types'
@@ -133,14 +134,19 @@ function loadSample() {
 
 <template>
   <div class="page">
-    <section class="hero">
-      <span class="eyebrow">Step 02 / 目标 JD</span>
-      <h1>粘贴真实 JD，让要求可被逐条追溯</h1>
-      <p class="hero__lead muted">
-        解析只抽取原文明确表达的内容。原文没有的信息会进入
-        <strong>未知字段</strong>，不会被猜测成"满足"。
-      </p>
-    </section>
+    <BeautifulPageHeader
+      context="目标建立 · 步骤 2 / 3"
+      title="目标 JD"
+      back-to="/goals/new"
+      back-label="回到求职目标"
+      description="解析只抽取原文明确表达的内容。原文没有的信息会进入未知字段，不会被猜测成“满足”。"
+    >
+      <template #meta>
+        <span>数据来自本地后端接口</span>
+        <span aria-hidden="true">·</span>
+        <span>解析完成后可进入能力图谱</span>
+      </template>
+    </BeautifulPageHeader>
 
     <div class="layout">
       <!-- 输入 -->
@@ -190,7 +196,7 @@ function loadSample() {
             <BeautifulButton variant="primary" type="button" :disabled="analyzing" @click="analyze">
               {{ analyzing ? '解析中…' : '导入并解析' }}
             </BeautifulButton>
-            <RouterLink class="btn btn--ghost" to="/goals/new">返回上一步</RouterLink>
+
           </div>
         </div>
       </section>
@@ -279,21 +285,6 @@ function loadSample() {
   gap: 30px;
 }
 
-.hero {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  max-width: 720px;
-}
-
-.hero__lead {
-  font-size: 14.5px;
-}
-
-.hero__lead strong {
-  color: var(--color-text);
-  font-weight: 600;
-}
 
 .layout {
   display: grid;
@@ -332,10 +323,6 @@ function loadSample() {
   color: var(--color-primary);
 }
 
-.btn--sm {
-  padding: 6px 12px;
-  font-size: 12px;
-}
 
 .alert {
   display: flex;
@@ -473,16 +460,8 @@ function loadSample() {
   color: var(--color-text);
 }
 
-.req__quote {
-  margin: 7px 0 0;
-  padding-left: 10px;
-  border-left: 2px solid var(--color-border-strong);
-  font-size: 12px;
-  color: var(--color-text-subtle);
-  line-height: 1.6;
-}
 
-@media (max-width: 980px) {
+@media (max-width: 1023px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
   }

@@ -127,6 +127,8 @@ export type GapType =
 
 export interface NextAction {
   type: string
+  /** 学习任务模块落地前为 null，表示尚未生成可执行任务，不得用占位 ID 冒充。 */
+  taskId: string | null
   reason: string
 }
 
