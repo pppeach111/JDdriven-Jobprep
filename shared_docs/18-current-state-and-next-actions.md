@@ -4,20 +4,20 @@
 
 ## 1. 状态快照
 
-状态日期：2026-09-16
+状态日期：2026-09-21
 
 | 项目 | 当前事实 | 状态 |
 |---|---|---|
 | 根目录 | `D:\MyProjects\ICT` | 已确认 |
 | Git 仓库 | 已初始化，当前分支 `main` | 已完成 |
 | 代码托管 | `origin` = `https://github.com/pppeach111/JDdriven-Jobprep.git`（GitHub，当前唯一远端）；CodeArts 远端已于 2026-09-16 移除 | 已确认，与 `11` 号文档冲突待确认 |
-| 最新提交 | `ae5c500 docs: refine technology and dependency boundaries`（累计 4 个提交，全部为文档），本地 `main` 与 `origin/main` 同一 SHA | 已提交并推送到 GitHub |
-| 工作区 | 存在未提交的应用骨架（`backend/`、`frontend/`、`worker/`、`database/`、`deploy/`、`scripts/`、`tools/`）与多份 `shared_docs/` 改动；**尚无任何应用代码提交** | 修改中 |
-| 产品代码 | 后端 36 个 Java 源文件可编译；前端 Vue 3 + TS 骨架可构建（46 模块）；Worker Python 骨架可启动并通过健康检查 | 已产出，待端到端验收 |
-| 后端测试 | 79 项全部通过（Failures/Errors/Skipped 均为 0）；`backend/target/site/jacoco/jacoco.csv` 显示 177/177 行覆盖 | 本地验证完成 |
+| 最新提交 | `3d845cf chore: add acceptance screenshots and ignore temp artifacts`（累计 13 个提交）；本地 `main` 领先 `origin/main` 8 个提交，因 `github.com:443` 不可达尚未推送 | 本地已提交，待推送 |
+| 工作区 | 存在未提交的契约缺陷修复：后端 4 个文件、前端 3 个文件、`shared_docs/14-contracts-and-schemas.md`，以及新增 `V3__skill_alias_and_seed_update.sql` | 修改中 |
+| 产品代码 | 后端 36 个 Java 源文件可编译；前端 Vue 3 + TS 骨架可构建；Worker Python 骨架可启动并通过健康检查 | 已产出，核心闭环已实测 |
+| 后端测试 | 84 项全部通过（Failures/Errors/Skipped 均为 0）；其中 `RuleBasedJdParserTest` 由 32 项增至 38 项 | 本地验证完成 |
 | Worker 测试 | 79 项通过（`uv run pytest`）；`/health` 与 `/health/ready` 已实测响应（本地 `ready:true`，`degraded:["model"]`） | 本地验证完成 |
-| 前端设计系统符合度 | `frontend/` 采用深色 Linear 主题，与 `19` 号文档（高质量浅色主题、单一墨绿 `#176B5B`、240px 左侧导航、禁止紫蓝渐变/玻璃拟态/循环动画）冲突 | **不符合，待重构** |
-| 数据库与端到端 | 本地 PostgreSQL 17.5/18 占用 5432 但缺凭据；Docker 守护进程未启动；目标→JD→解析→能力图谱链路未实际运行 | 未验证，阻塞 |
+| 前端设计系统符合度 | `frontend/` 已按 `19` 号文档重构（浅色靛蓝紫、顶部横向导航、玻璃拟态受 §4.5 约束），并完成 Beautiful UI 本地适配 | 已符合，视觉验收矩阵已执行 |
+| 数据库与端到端 | 本地 PostgreSQL 17.5 已创建 `career_path` 角色与库，Flyway 迁移至 v3；`目标 → JD 导入 → 解析 → 能力图谱 → 前端呈现` 已用真实数据实测跑通 | **已解除阻塞，已实测** |
 | 产品名称 | “职径（CareerPath）”仅为暂定文案，尚未最终确定 | 待定 |
 | 规格文档 | `shared_docs/00`～`19` 与索引已存在 | 已完成 |
 | 本地 CodeArts 目录 | `.codeartsdoer/` 存在，但被根 `.gitignore` 排除 | 本地工具状态 |
@@ -159,17 +159,22 @@ Plus Jakarta Sans 已自托管（4 个字重 latin 子集，共 48KB，附 OFL �
 不得作为“页面已完成”的依据（`00` 号强约束与 `19` 号第 14 节禁止用 Mock 结果冒充真实集成）。
 预览稿在编码前已知的两项偏离已在本轮修正：重复主按钮（违反 §2.2 / §6.5）、首屏卡片顺序（违反 §7.2）。
 
-### B. 后端契约缺陷（“未知猜成已知”）
+### B. 后端契约缺陷（“未知猜成已知”）—— 已于 2026-09-21 修复
 
-以下均位于 `backend/src/main/java/com/careerpath/`，违反 `00` 号强约束与 `14` 号第 1 节：
+以下均位于 `backend/src/main/java/com/careerpath/`，违反 `00` 号强约束与 `14` 号第 1 节。
+2026-09-21 在真实数据库上完成端到端联调后，用真实 JD 文本复现并逐项修复：
 
-1. `jd/RuleBasedJdParser.java` 的 `inferLevel` 兜底返回 `3`；
-2. `skill/CapabilityService.java` 中的 `getRequiredLevel() == null ? 3 : ...` 同源问题；
-3. 兜底值 `3` 与“熟悉”同值，下游无法区分“JD 未提等级”与“JD 要求熟悉”；
-4. `inferLevel` 的 24 字符上下文窗口在相邻技能间可能串扰；
-5. `skill/dto/CapabilityMap.java` 的 `NextAction` 缺 `14` 号第 5 节示例中的 `taskId`。
+1. `jd/RuleBasedJdParser.java` 的 `inferLevel` 兜底返回 `3` —— 改为返回 `null`，不再猜测；
+2. `skill/CapabilityService.java` 中的 `getRequiredLevel() == null ? 3 : ...` —— 改为保留 `null`，取该技能全部要求的最高明确等级；
+3. 兜底值 `3` 与“熟悉”同值，下游无法区分“JD 未提等级”与“JD 要求熟悉” —— 现由 `null` 表达未知，前端展示为“未知”；
+4. `inferLevel` 的 24 字符上下文窗口在相邻技能间可能串扰 —— 改为按分句（逗号 / 顿号 / 分号 / 句号 / 换行）就近归属等级词，技能名内部的等级词（如“Java 基础与集合”的“基础”）不参与判断；
+5. `skill/dto/CapabilityMap.java` 的 `NextAction` 缺 `14` 号第 5 节示例中的 `taskId` —— 已补字段，学习任务模块落地前为 `null`。
 
-修复前不得将这些字段作为事实展示或写入结果。
+联调中另复现并修复 3 项：
+
+6. `BONUS` 永不产生：`PREFERRED` 正则吞掉了“加分”，契约中 4 个 `RequirementType` 实际只产出 3 个 —— 已拆分 BONUS（加分 / nice to have）与 PREFERRED（优先 / 更佳）；
+7. 重复提取：`Spring` 与 `Spring Boot` 从同一段文字各产出一条要求 —— 改为同一段文字只保留最长关键词命中；
+8. 漏抽：JD 明写“精通 Java”与“Kubernetes”却无对应要求 —— 前者因 `V2__seed_skills.sql` 的 `java-basics` 别名缺裸 “Java”，后者因技能库无该词条，已由新增的 `V3__skill_alias_and_seed_update.sql` 补足（Flyway 禁止就地修改已应用的 V2）。
 
 ### C. Worker 已修复的安全问题（含回归测试）
 
@@ -177,23 +182,24 @@ Python 标准库 `ipaddress.is_private` 不覆盖 `100.64.0.0/10`（RFC 6598 运
 
 ### D. 当前阻塞
 
-- **数据库**：本地 PostgreSQL 17.5 与 18 同时安装且占用 5432，连接需要密码；Docker Desktop 守护进程未启动。未取得凭据前不猜测、不写入临时凭据，因此迁移与种子未在真实库上运行；
-- **端到端闭环**：因上述阻塞，`目标 → JD 导入 → 解析 → 能力图谱` 未实际运行，目前仅完成编译、单元测试与脚本语法检查；
-- **代码托管决策变更**：2026-09-16 按队伍指令移除 CodeArts 远端，`origin` 改指 GitHub。此举与 `11` 号文档第 7 行及 `README.md` 第 98、99、107 行的“CodeArts 覆盖全流程并留痕”要求冲突，赛事提交规则确认前不作最终结论，见第 7 节 B；
-- **`shared_docs/19-ui-design-system.md` 尚未纳入版本控制**，当前为未跟踪文件。
+- **数据库**：已解除。5432 实例（服务 `postgresql-x64-17`）原本既无 `career_path` 角色也无 `career_path` 库，报出的 `28P01` 实为“角色不存在”的固定返回而非密码错误；已用单用户模式创建角色与库，Flyway 迁移至 v3。**遗留运维事项**：该实例当前由 WMI 脱离进程树临时启动，长期稳定需以管理员身份 `net start postgresql-x64-17`；切换前必须先 `pg_ctl stop -D D:\PostgreSQL\data\data -m fast`（两者共用同一数据目录）；
+- **端到端闭环**：已解除。2026-09-21 用真实数据跑通并留痕，见第 10 节追加记录；
+- **代码托管决策变更**：2026-09-16 按队伍指令移除 CodeArts 远端，`origin` 改指 GitHub。此举与 `11` 号文档第 7 行及 `README.md` 第 98、99、107 行的“CodeArts 覆盖全流程并留痕”要求冲突，赛事提交规则确认前不作最终结论，见第 7 节 B。当前 `github.com:443` 不可达，8 个提交尚未推送；
+- **剩余契约缺口**：岗位发现、测评与面试、学习计划、简历建议四个页面**后端尚无对应接口**，其演示数据真实化必须先新建契约，见第 6 节第 7 项。
 
 ## 6. 立即可执行任务
 
 云码道不需要等待所有外部问题回答后才工作，按以下顺序推进：
 
 1. 收尾 CP-002：完成 [14-contracts-and-schemas.md](./14-contracts-and-schemas.md) 到 OpenAPI / JSON Schema 的导出，写入 `docs/contracts`；
-2. 解除数据库阻塞，在真实库上跑通 `scripts/db-migrate` 与 `scripts/db-seed`，用虚构种子数据联通后端；
-3. 端到端验证核心闭环：目标 → JD 导入 → 解析 → 能力图谱 → 前端呈现；
-4. 修复第 5 节 B 的 5 项契约缺陷，尤其是“未知猜成已知”的等级兜底；
-5. 开专门任务重构 `frontend/`，使其符合 [19-ui-design-system.md](./19-ui-design-system.md)，并在重构前以该文档的视觉验收矩阵为准；
+2. ~~解除数据库阻塞，在真实库上跑通 `scripts/db-migrate` 与 `scripts/db-seed`~~ —— 已完成（2026-09-21，Flyway v3，10 张业务表）；
+3. ~~端到端验证核心闭环：目标 → JD 导入 → 解析 → 能力图谱 → 前端呈现~~ —— 已完成（2026-09-21）；
+4. ~~修复第 5 节 B 的 5 项契约缺陷，尤其是“未知猜成已知”的等级兜底~~ —— 已完成（2026-09-21，实际修复 8 项）；
+5. ~~开专门任务重构 `frontend/`，使其符合 19 号设计系统~~ —— 已完成（含 Beautiful UI 本地适配与视觉验收矩阵）；
 6. 用本地 PostgreSQL/Redis 或 Docker 替代服务开发，不把临时凭据提交；
-7. 华为云账号和配额确认后，再配置 RDS、DCS、OBS、MaaS 和 ECS；
-8. CP-003、CP-004、CP-005 可在 CP-002 契约冻结后并行。
+7. 新建 CP-003 起的最小契约，使四个一级页面（岗位发现 / 测评与面试 / 学习计划 / 简历建议）能接真实接口，随后替换页内演示数据；
+8. 华为云账号和配额确认后，再配置 RDS、DCS、OBS、MaaS 和 ECS；
+9. CP-003、CP-004、CP-005 可在 CP-002 契约冻结后并行。
 
 ## 7. 必须由队伍确认的外部事项
 
@@ -231,12 +237,12 @@ Python 标准库 `ipaddress.is_private` 不覆盖 `100.64.0.0/10`（RFC 6598 运
 
 - 当前任务编号及其依赖；
 - CP-001 为 `PARTIAL`、CP-002 为 `PARTIAL`、CP-003 未开始，而不是未初始化；
-- 业务代码已存在于工作区但尚未提交，且 `frontend/` 不符合 `19` 号设计系统；
+- 应用代码已有 13 个本地提交（领先 `origin/main` 8 个，因 `github.com:443` 不可达未推送）；`frontend/` 已符合 `19` 号设计系统并通过视觉验收矩阵；
 - 代码托管为 GitHub 单一远端，CodeArts 远端已移除，该决策与 `11` 号文档冲突且待确认；
 - 本次准备创建或修改的文件；
 - 使用本地 Mock 还是已确认云服务；
 - 测试和人工验收方式；
-- 数据库与端到端闭环尚未验证，并说明第 5 节 D 的阻塞；
+- 数据库与端到端闭环已于 2026-09-21 实测跑通（`career_path` 库与角色已建立、Flyway v3）；仍须转述第 5 节 D 的托管冲突与 PostgreSQL 运维事项；
 - 若依赖外部确认，明确指出但不要因此停止无关工作。
 
 ## 9. 状态更新格式
@@ -467,4 +473,39 @@ Python 标准库 `ipaddress.is_private` 不覆盖 `100.64.0.0/10`（RFC 6598 运
 阻塞：
   - 无（本次不涉及数据库与契约）
 下一步：统一 JdImportView 标题区；后端就绪后替换演示数据并做真实 API 回归
+```
+### 追加记录（2026-09-21 真实库端到端联调与契约缺陷修复）
+
+```text
+日期：2026-09-21
+任务：CP-002（契约缺陷修复） / 核心闭环端到端验证 / CP-010 收尾
+已完成：
+  - 数据库：5432 实例原本既无 career_path 角色也无该库，已用单用户模式创建角色与库，
+    Flyway 由 v1 迁移至 v3，建成 10 张业务表（此前“缺少凭据”的判断实为“角色不存在”误报）
+  - 端到端闭环实测：POST /api/v1/goals → POST /goals/{id}/jd → POST /goals/{id}/analyze → GET /goals/{id}/capability-map
+    goalId=2e0a76ae-af11-4684-8639-390f1c1ad6f5，sourceId=b48d95d3-b6b3-471b-893b-b55e64044e7b
+    解析出 10 条要求（2 HARD_GATE / 7 CORE / 1 PREFERRED）与 8 项能力，前端经 Edge headless 截图确认渲染真实数据
+  - 契约缺陷修复 8 项（明细见第 5 节 B）：
+    等级兜底 3 → null；按分句就近归属等级词并排除技能名内部的等级词；BONUS 与 PREFERRED 拆分；
+    同段文字最长关键词去重；种子补裸 "Java" 与新增 Kubernetes 词条（V3 迁移）；NextAction 补 taskId
+  - 前端：顶栏「演示数据」标记由全局常驻改为按路由收敛（只在一级导航的四个演示页面显示）；
+    JdImportView 标题区统一到 BeautifulPageHeader，移除大字报 hero 与页面局部的「返回上一步」链接，
+    内容区断点 980px → 1023px（并入外壳断点体系）
+  - 契约文档：14 号补充“requiredLevel 未知时为 null”“技能等级归属规则”“nextAction.taskId 语义”
+未完成：
+  - OpenAPI / JSON Schema 导出（docs/contracts 仍为空）
+  - 四个一级页面的真实数据替换（后端尚无对应接口，需先新建契约）
+  - 8 个提交尚未推送到 GitHub（github.com:443 不可达）
+证据：
+  - backend/src/test/java/com/careerpath/jd/RuleBasedJdParserTest.java：38 项通过；后端全量 84 项通过
+  - backend/src/main/resources/db/migration/V3__skill_alias_and_seed_update.sql
+  - backend/.tmp-backend.log：Flyway「Current version of schema "public": 2」→
+    「Migrating schema "public" to version "3 - skill alias and seed update"」→「Successfully applied 1 migration」
+  - 能力图谱页截图实测：微服务架构行「目标等级」显示“未知”；Spring Boot 由误判 L4 修正为 L3；
+    Java 基础与集合（L4）与 Kubernetes 与容器编排（L2）新进入图谱
+  - npm run typecheck 通过（vue-tsc -b --force）
+阻塞：
+  - 赛事方对“是否必须托管在 CodeArts 并留痕”的确认未完成
+  - 本地 PostgreSQL 当前为 WMI 临时实例，长期稳定需以管理员身份启动 Windows 服务
+下一步：OpenAPI 导出（CP-002 收尾），随后为四个一级页面新建最小契约
 ```
