@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ApiError, api } from '@/api/client'
 import BeautifulButton from '@/components/BeautifulButton.vue'
+import BeautifulContextCard from '@/components/BeautifulContextCard.vue'
 import BeautifulEmptyState from '@/components/BeautifulEmptyState.vue'
 import BeautifulLoadingState from '@/components/BeautifulLoadingState.vue'
 import BeautifulPageHeader from '@/components/BeautifulPageHeader.vue'
 import BeautifulStatus from '@/components/BeautifulStatus.vue'
 import BeautifulTaskRow from '@/components/BeautifulTaskRow.vue'
-import type { JobGoal } from '@/api/types'
+import { useCurrentGoal } from '@/composables/useCurrentGoal'
 
 /**
  * 求职目标（19-ui-design-system.md §7.1）。
@@ -22,7 +23,22 @@ import type { JobGoal } from '@/api/types'
  *
  * 本页面连接真实后端接口（/api/v1/goals），不使用演示数据。
  */
+const route = useRoute()
 const router = useRouter()
+
+/**
+ * 已有目标列表与顶栏的目标切换器共用同一份全局状态（useCurrentGoal），
+ * 避免页面列表与顶栏切换器各自维护数据源、出现「切换器里有、页面上没有」的矛盾（§2.4）。
+ */
+const { state: goalState, selectableGoals, loadGoals, adoptGoal } = useCurrentGoal()
+
+const existingGoals = computed(() => selectableGoals.value)
+
+/**
+ * 从一级导航「能力与证据」进来时带 `intent=capability`。
+ * 该入口不做禁用态（§3.2），改为先把用户引导到创建页，创建完成后直接进入能力图谱。
+ */
+const fromCapabilityIntent = computed(() => route.query.intent === 'capability')
 
 const form = reactive({
   name: '',
@@ -36,9 +52,6 @@ const submitting = ref(false)
 const errorMessage = ref('')
 const errorTraceId = ref('')
 
-const existingGoals = ref<JobGoal[]>([])
-const loadingGoals = ref(true)
-
 /**
  * 招聘类型尚未在 14-contracts-and-schemas.md 冻结为枚举
  * （10-delivery-plan.md 约定在 CP-002/CP-003 冻结），
@@ -49,20 +62,6 @@ const EMPLOYMENT_OPTIONS = [
   { value: 'INTERNSHIP', label: 'INTERNSHIP · 实习' },
   { value: 'CAMPUS', label: 'CAMPUS · 校招' },
 ]
-
-async function loadGoals() {
-  loadingGoals.value = true
-  try {
-    const response = await api.listGoals()
-    existingGoals.value = response.data
-  } catch (error) {
-    // 列表加载失败不阻断创建流程，只在控制台留痕
-    console.warn('加载已有目标失败', error)
-    existingGoals.value = []
-  } finally {
-    loadingGoals.value = false
-  }
-}
 
 function resetError() {
   errorMessage.value = ''
@@ -87,7 +86,13 @@ async function submit() {
       graduationYear: form.graduationYear,
       weeklyHours: form.weeklyHours,
     })
-    await router.push(`/goals/${response.data.id}/jd`)
+
+    // 登记进全局状态：顶栏切换器与「能力与证据」入口立即可用，
+    // 省掉一次额外的列表往返，也不在前端伪造目标对象（§14）。
+    adoptGoal(response.data)
+
+    const next = fromCapabilityIntent.value ? 'capability' : 'jd'
+    await router.push(`/goals/${response.data.id}/${next}`)
   } catch (error) {
     if (error instanceof ApiError) {
       errorMessage.value = error.message
@@ -107,8 +112,6 @@ function formatDate(iso: string): string {
     return iso
   }
 }
-
-onMounted(loadGoals)
 </script>
 
 <template>
@@ -129,6 +132,14 @@ onMounted(loadGoals)
     </BeautifulPageHeader>
 
     <div class="bui-form-col form-col">
+      <!-- 从一级导航「能力与证据」进来时的引导（§3.2：该入口不做禁用态，改为引导前置条件） -->
+      <BeautifulContextCard
+        v-if="fromCapabilityIntent"
+        eyebrow="来自「能力与证据」"
+        text="能力与证据挂在一个求职目标下，所以这里先创建目标。创建完成后会直接进入该目标的能力图谱；图谱由目标 JD 解析生成，按页面提示导入 JD 即可。"
+        tone="neutral"
+      />
+
       <section class="surface card">
         <form class="form" @submit.prevent="submit">
           <div class="field">
@@ -212,7 +223,13 @@ onMounted(loadGoals)
 
           <div class="actions">
             <BeautifulButton variant="primary" type="submit" :disabled="submitting">
-              {{ submitting ? '创建中…' : '创建并继续导入 JD' }}
+              {{
+                submitting
+                  ? '创建中…'
+                  : fromCapabilityIntent
+                    ? '创建并查看能力图谱'
+                    : '创建并继续导入 JD'
+              }}
             </BeautifulButton>
           </div>
         </form>
@@ -225,9 +242,22 @@ onMounted(loadGoals)
           <span class="bui-section__note">继续上次的进度</span>
         </div>
 
-        <div v-if="loadingGoals" class="loading-row">
+        <div v-if="!goalState.synced && !goalState.errorMessage" class="loading-row">
           <BeautifulLoadingState label="正在读取已有目标" variant="Dots" />
         </div>
+
+        <BeautifulEmptyState
+          v-else-if="goalState.errorMessage"
+          title="已有目标读取失败"
+          :reason="`${goalState.errorMessage}创建新目标不受影响，也可以重试读取。`"
+          required-input="本地后端服务"
+        >
+          <template #action>
+            <BeautifulButton variant="secondary" type="button" @click="loadGoals">
+              重试
+            </BeautifulButton>
+          </template>
+        </BeautifulEmptyState>
 
         <BeautifulEmptyState
           v-else-if="existingGoals.length === 0"

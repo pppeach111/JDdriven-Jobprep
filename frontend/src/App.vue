@@ -4,26 +4,40 @@ import { useRoute } from 'vue-router'
 import AppIcon from '@/components/AppIcon.vue'
 import BrandMark from '@/components/BrandMark.vue'
 import BeautifulStatus from '@/components/BeautifulStatus.vue'
+import GoalSwitcher from '@/components/GoalSwitcher.vue'
 import type { IconName } from '@/components/icons'
+import { useCurrentGoal } from '@/composables/useCurrentGoal'
 
 const route = useRoute()
 
-const goalId = computed(() => String(route.params.goalId ?? ''))
+const { state: goalState, syncGoalFromRoute, loadGoals } = useCurrentGoal()
+
+const routeGoalId = computed(() => String(route.params.goalId ?? ''))
+
+/**
+ * 当前生效的 goalId：路由优先（用户此刻正在这个目标里），否则回落到全局「当前目标」。
+ *
+ * 这一层就是 §3.2「全局目标切换器」的落点：离开目标流程后 `route.params.goalId`
+ * 为空，此前一级导航会因此把「能力与证据」渲染成不可用项，对已经建过目标的用户也说错。
+ */
+const goalId = computed(() => routeGoalId.value || goalState.currentGoalId || '')
 
 /**
  * 一级导航（shared_docs/19-ui-design-system.md §3.1 固定 6 项）。
  *
- * 「能力与证据」必须挂在某个求职目标下，因此没有 goalId 时不伪造跳转，
- * 渲染为不可用状态并给出非颜色线索（§2.4 状态必须诚实、§14 不得用 Mock 冒充真实集成）。
+ * 六项全部可点：一级导航是主闭环入口，用禁用态挡住其中一项，等于把
+ * 「尚未满足前提」伪装成「功能不存在」（§2.4 状态必须诚实）。
+ * 「能力与证据」必须挂在某个求职目标下，因此没有当前目标时它先落到创建页
+ * 并带上 `intent`，由创建页说明「创建完成后即可查看能力与证据」。
  * 其余四项均有独立路由；这些页面尚无后端接口，页内使用明确标识的演示数据。
  */
 interface PrimaryNav {
   key: string
   label: string
   icon: IconName
-  to: string | null
-  /** `to` 为 null 时的真实原因。不可用时必须说明为什么，而不是一律写「尚未开放」。 */
-  disabledReason?: string
+  to: string
+  /** 需要用户先满足某个前提时，说明原因与去向。 */
+  hint?: string
 }
 
 const primaryNav = computed<PrimaryNav[]>(() => [
@@ -32,8 +46,8 @@ const primaryNav = computed<PrimaryNav[]>(() => [
     key: 'capability-map',
     label: '能力与证据',
     icon: 'layers',
-    to: goalId.value ? `/goals/${goalId.value}/capability` : null,
-    disabledReason: '需先创建目标',
+    to: goalId.value ? `/goals/${goalId.value}/capability` : '/goals/new?intent=capability',
+    hint: goalId.value ? undefined : '先创建求职目标，再查看该目标的能力与证据',
   },
   { key: 'jobs', label: '岗位发现', icon: 'briefcase', to: '/discovery' },
   { key: 'assessment', label: '测评与面试', icon: 'clipboard-check', to: '/assessment' },
@@ -41,13 +55,23 @@ const primaryNav = computed<PrimaryNav[]>(() => [
   { key: 'resume', label: '简历建议', icon: 'file-text', to: '/resume' },
 ])
 
-const activeKey = computed(() => String(route.name ?? ''))
+const activeKey = computed(() => {
+  const name = String(route.name ?? '')
+  // 无当前目标时，「能力与证据」入口先落到创建页；此时仍让该项保持选中，
+  // 否则用户会以为自己点错了入口（§2.4 状态必须诚实）。
+  if (name === 'goal-create' && route.query.intent === 'capability') return 'capability-map'
+  return name
+})
 
 /**
  * 目标建立流程条只属于「目标建立」这条流程（§5.4），
  * 在岗位发现等一级页面上显示会把两个层级混在一起，因此按路由收敛。
+ *
+ * 能力图谱不带流程条：它是这条流程的产出页，页面标题区已经承担
+ * 「目标建立 · 步骤 3 / 3」与返回「目标 JD」的职责；两处同时高亮同一步骤
+ * 会让一级导航与子流程混层（§3.1 / §5.4）。
  */
-const FLOW_ROUTE_KEYS = ['goal-create', 'jd-import', 'capability-map']
+const FLOW_ROUTE_KEYS = ['goal-create', 'jd-import']
 const showFlowbar = computed(() => FLOW_ROUTE_KEYS.includes(activeKey.value))
 
 /**
@@ -151,6 +175,10 @@ watch(drawerOpen, async (open) => {
   if (trigger && trigger.offsetParent !== null) trigger.focus()
 })
 
+// 路由里的 goalId 是用户此刻正在操作的目标，同步进全局状态，
+// 使离开目标流程后一级导航仍指向正确的目标（§3.2）。
+watch(routeGoalId, (id) => syncGoalFromRoute(id), { immediate: true })
+
 watch(
   () => route.fullPath,
   () => {
@@ -161,6 +189,8 @@ watch(
 onMounted(() => {
   desktopMq = window.matchMedia(DESKTOP_MQ)
   desktopMq.addEventListener('change', onViewportChange)
+  // 目标列表是顶栏切换器的唯一数据源；读取失败时切换器显示「未同步」而不是假装成功。
+  void loadGoals()
 })
 
 onBeforeUnmount(() => {
@@ -184,31 +214,25 @@ onBeforeUnmount(() => {
         </RouterLink>
 
         <nav class="navlinks" aria-label="主导航">
-          <template v-for="item in primaryNav" :key="item.key">
-            <RouterLink
-              v-if="item.to"
-              :to="item.to"
-              class="navlink"
-              :class="{ 'navlink--active': item.key === activeKey }"
-              :aria-current="item.key === activeKey ? 'page' : undefined"
-            >
-              <AppIcon :name="item.icon" />
-              <span class="txt">{{ item.label }}</span>
-            </RouterLink>
-            <span
-              v-else
-              class="navlink navlink--disabled"
-              aria-disabled="true"
-              :title="`${item.label}（${item.disabledReason ?? '尚未开放'}）`"
-            >
-              <AppIcon :name="item.icon" />
-              <span class="txt">{{ item.label }}</span>
-              <span class="sr-only">（{{ item.disabledReason ?? '尚未开放' }}）</span>
-            </span>
-          </template>
+          <RouterLink
+            v-for="item in primaryNav"
+            :key="item.key"
+            :to="item.to"
+            class="navlink"
+            :class="{ 'navlink--active': item.key === activeKey }"
+            :aria-current="item.key === activeKey ? 'page' : undefined"
+            :title="item.hint"
+          >
+            <AppIcon :name="item.icon" />
+            <span class="txt">{{ item.label }}</span>
+            <span v-if="item.hint" class="sr-only">（{{ item.hint }}）</span>
+          </RouterLink>
         </nav>
 
         <div class="topnav__actions">
+          <!-- §3.2：全局目标切换器置于导航顶部，是一级导航与各模块共用的当前目标来源 -->
+          <GoalSwitcher class="topnav__goal" />
+
           <!-- 搜索与通知尚无后端，按 §14 不伪造可用性，明确标注不可用 -->
           <span class="search search--disabled" title="搜索尚未开放">
             <AppIcon name="search" />
@@ -280,29 +304,26 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
+        <!-- 移动端顶栏放不下切换器，改在抽屉里提供（§3.2 / §3.3） -->
+        <div class="drawer__goal">
+          <GoalSwitcher block />
+        </div>
+
         <nav class="drawer__nav">
-          <template v-for="item in primaryNav" :key="item.key">
-            <RouterLink
-              v-if="item.to"
-              :to="item.to"
-              class="drawer__link"
-              :class="{ 'drawer__link--active': item.key === activeKey }"
-              :aria-current="item.key === activeKey ? 'page' : undefined"
-            >
-              <AppIcon :name="item.icon" :size="18" :stroke-width="1.9" />
-              <span class="drawer__link-text">{{ item.label }}</span>
-            </RouterLink>
-            <span
-              v-else
-              class="drawer__link drawer__link--disabled"
-              aria-disabled="true"
-              :title="item.disabledReason"
-            >
-              <AppIcon :name="item.icon" :size="18" :stroke-width="1.9" />
-              <span class="drawer__link-text">{{ item.label }}</span>
-              <span class="drawer__flag">{{ item.disabledReason ?? '尚未开放' }}</span>
-            </span>
-          </template>
+          <RouterLink
+            v-for="item in primaryNav"
+            :key="item.key"
+            :to="item.to"
+            class="drawer__link"
+            :class="{ 'drawer__link--active': item.key === activeKey }"
+            :aria-current="item.key === activeKey ? 'page' : undefined"
+            :title="item.hint"
+            @click="closeDrawer"
+          >
+            <AppIcon :name="item.icon" :size="18" :stroke-width="1.9" />
+            <span class="drawer__link-text">{{ item.label }}</span>
+            <span v-if="item.hint" class="sr-only">（{{ item.hint }}）</span>
+          </RouterLink>
         </nav>
 
         <p class="drawer__note">
@@ -441,10 +462,6 @@ onBeforeUnmount(() => {
   box-shadow: var(--shadow-brand);
 }
 
-.navlink--disabled {
-  color: var(--color-text-subtle);
-  cursor: not-allowed;
-}
 
 /* ---------- 右侧动作区 ---------- */
 .topnav__actions {
@@ -453,6 +470,11 @@ onBeforeUnmount(() => {
   gap: 9px;
   flex-shrink: 0;
   margin-left: auto;
+}
+
+/* 顶栏里的目标切换器不参与压缩，收窄由组件内部的断点处理 */
+.topnav__goal {
+  flex-shrink: 0;
 }
 
 .search {
@@ -585,11 +607,16 @@ onBeforeUnmount(() => {
   color: var(--color-text-muted);
 }
 
+/* 抽屉里的目标切换器与顶栏复用同一组件（§3.2 切换器不得散落到各模块） */
+.drawer__goal {
+  padding-top: 14px;
+}
+
 .drawer__nav {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 14px 0;
+  padding: 0 0 14px;
 }
 
 .drawer__link {
@@ -607,7 +634,7 @@ onBeforeUnmount(() => {
     color var(--dur-fast) var(--ease-out-expo);
 }
 
-.drawer__link:not(.drawer__link--disabled):hover {
+.drawer__link:hover {
   background-color: var(--color-surface-subtle);
   color: var(--color-text);
 }
@@ -617,19 +644,8 @@ onBeforeUnmount(() => {
   color: var(--color-primary);
 }
 
-.drawer__link--disabled {
-  color: var(--color-text-subtle);
-  cursor: not-allowed;
-}
-
 .drawer__link-text {
   flex: 1;
-}
-
-.drawer__flag {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--color-text-subtle);
 }
 
 .drawer__note {

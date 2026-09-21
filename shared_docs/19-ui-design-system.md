@@ -71,12 +71,12 @@
 ### 3.2 桌面外壳
 
 - 全宽段：顶部横向导航（`height: 70px`，`position: sticky`）+ 弹性主内容区；
-- 顶部导航结构固定为：品牌标记 → 一级导航（6 项，横向 pill）→ 搜索 → 通知 → 用户；
+- 顶部导航结构固定为：品牌标记 → 一级导航（6 项，横向 pill）→ 全局目标切换器 → 搜索 → 通知 → 用户；
 - `1024～1359px`：顶部导航隐藏部分导航文案只留图标，搜索框收窄，横向留白由 32px 收至 22px；
 - `<1024px`：顶部导航收起一级导航链接（导航入口移入抽屉），保留品牌、搜索与用户操作；
 - 主内容最大宽度按任务选择：表单 720px、阅读/测评 800px、数据工作台 1440px；
 - 页面标题区包含返回关系、标题、简短说明、状态和唯一主操作；
-- 全局目标切换器置于导航顶部或页面标题区，不能散落在每个模块内。
+- 全局目标切换器置于导航顶部或页面标题区，不能散落在每个模块内。落在顶栏时位于一级导航之后、搜索之前，随顶栏档位一起收窄；`<768px` 与一级导航链接一并收进抽屉，抽屉内复用同一组件。它只呈现 `GET /api/v1/goals` 返回的 `ACTIVE` 目标，后端未确认时显示「未同步」，不得编造或沿用陈旧的目标名称。
 
 ### 3.3 移动外壳
 
@@ -226,6 +226,9 @@ Beautiful UI 的 React registry 仅作为结构和交互参考，本项目不把
 - 适配组件只承载视觉与状态表达，不能生成未由接口返回的进度、等级、置信度或推荐结论。
 - 每次前端交付必须列出复用或新增的 `Beautiful*.vue` 组件；未复用现有组件时，必须记录无法覆盖的业务语义和新增共享适配的理由。
 - 产品名标记由 `BrandMark.vue` 的自绘几何路径承载（logo 不属图标库范畴，不因此新增 Lucide 图标）；一级页面的标题区、区块、列表、空状态与能力矩阵外壳统一由 `theme.css` 的「页面骨架」段落承载，页面不得自建平行的圆角、字号或阴影刻度。
+- 顶栏与移动端抽屉的全局目标切换器由 `GoalSwitcher.vue` 承载（外壳级业务组件，不加 `Beautiful` 前缀：它绑定 `useCurrentGoal` 与路由，不是可复用的视觉原语）；`frontend/src/composables/useCurrentGoal.ts` 是「当前目标」的唯一来源，页面不得各自维护一份当前目标。
+- §3.1 的一级导航入口一律可点，不得渲染为禁用态：需要前提才能到达的模块（如「能力与证据」需要先有目标）改为跳转到前置页面并携带意图参数，由该页面说明为什么先到这里；一级导航中的不可聚焦项会让主闭环入口对键盘用户整体消失。
+- §7.3 能力矩阵页的「分项差距总览」由既有 `LevelCompare` + `ConfidenceBadge` 组合而成，不新增图表组件；总览只按差距处置优先级取前 8 项，完整清单仍由矩阵承载，且不得折算成单一总分或匹配度百分比。
 
 ## 5. 布局模式
 
@@ -512,6 +515,8 @@ CP-010 页面至少检查以下视口：
 
 | 日期 | 修订范围 | 变更理由 | 留痕位置 |
 |---|---|---|---|
+| 2026-09-21 | §3.2 顶栏结构补入全局目标切换器并明确其收缩与抽屉复用规则；§4.6 新增 `GoalSwitcher.vue`、`useCurrentGoal` 归属，以及「一级导航一律可点」「图谱分项总览只由既有组件组合」两条约束 | 落实用户对本轮架构缺口的四项裁决：①能力图谱保留一级导航；②补齐「全局当前目标 → 全局目标切换器 → 导航项永远可点」三层；③图谱页新增分项对比条形图；④不做雷达图。缺陷根因是 §3.2 第 79 行早已要求全局目标切换器，但该能力从未实现，导致 `App.vue` 的 `goalId` 只取自 `route.params.goalId`，离开目标流程即把「能力与证据」渲染成不可用项，对已建目标的用户也说错 | `18-current-state-and-next-actions.md` 第 5 节 E、第 6 节、第 10 节；实现见 `frontend/src/composables/useCurrentGoal.ts`、`frontend/src/components/GoalSwitcher.vue`、`frontend/src/App.vue`、`frontend/src/views/GoalCreateView.vue`、`frontend/src/views/CapabilityMapView.vue` |
+| 2026-09-21 | §3.2 顶栏「1024～1359px 隐藏部分导航文案只留图标」与 §3.3「`<768px` 一级导航收进抽屉」的实际实现断点分别为 1099px 与 767px，本次未改动实现，待用户裁决以文档还是实现为准 | 本轮验收中实测发现该既有偏差：1024～1099px 之外的 1100～1359px 段导航文案仍然显示，768～1023px 段只隐藏文案而未移入抽屉。因不属本轮四项裁决范围，不做未经确认的改动，仅登记 | `18-current-state-and-next-actions.md` 第 6 节 |
 | 2026-09-21 | §4.6 组件映射新增 `BeautifulPageHeader`、`BeautifulEmptyState`，并明确 `BrandMark` 与「页面骨架」样式的归属；§3.2 顶栏高度与 §4.4 控件尺寸回归文档值；§3.3 移动端数据表改为分组列表；新增 4 条一级路由；内容区断点由 900px 收敛到外壳断点体系 | 用户要求新建 5 个页面初版界面、重做产品名与图标并优先复用本地组件。验收中发现两处与本规范不一致：①外壳「紧凑化」把顶栏压到 64px/60px、控件压到 34px，违反 §3.2 的 70px、§3.3 的 62px 与 §4.4 的 40px 及图标按钮 ≥36px；②能力矩阵在 390px 下依赖横向滚动，违反 §3.3「数据表不默认依赖横向滚动」。二者一并按本规范修正，并补齐导航当前页 `aria-current` 与表头排序按钮的 24px 最小点击区 | `18-current-state-and-next-actions.md` CP-010 追加记录；实现见 `frontend/src/components/BeautifulPageHeader.vue`、`BeautifulEmptyState.vue`、`BrandMark.vue`、`frontend/src/styles/theme.css`「页面骨架」段 |
 | 2026-09-21 | §4.6 Beautiful UI 默认复用优先级；项目代理规则与 `careerpath-ui` 技能 | 确保后续 Codex 或 CodeArts 进行页面、组件和布局设计时优先复用本地适配，避免页面内重复建立平行组件 | 根 `AGENTS.md`；`tools/codearts-skills/careerpath-ui/SKILL.md`；`18-current-state-and-next-actions.md` CP-010 追加记录 |
 | 2026-09-21 | §1 视觉方向；§4.3 紧凑圆角；§4.5 表面规范；§4.6（新增）Beautiful UI 接入规则；三页共享组件映射 | 用户要求以 beautifului.dev 的组件设计重构现有 Vue 前端；保留 Vue 3 + TypeScript 与现有 API，不直接引入 React/Tailwind 运行时 | `18-current-state-and-next-actions.md` CP-010 追加记录；实现见 `frontend/src/components/Beautiful*.vue` |

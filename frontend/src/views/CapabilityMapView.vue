@@ -148,6 +148,30 @@ const sortedSkills = computed<SkillCard[]>(() => {
   })
 })
 
+/**
+ * 分项差距总览的阅读顺序：先按差距处置优先级降序，同级按能力名。
+ * 与表格的排序状态解耦——总览的顺序不应被用户临时的列排序打乱（§401）。
+ */
+const gapRankedSkills = computed<SkillCard[]>(() => {
+  return [...skills.value].sort((a, b) => {
+    const left = a.gapType ? GAP_SEVERITY[a.gapType] : null
+    const right = b.gapType ? GAP_SEVERITY[b.gapType] : null
+
+    // 未知不参与比较：无明显差距的排在最后，与表格排序沿用同一套 null 语义（§6.1）
+    if (left === null && right === null) return a.name.localeCompare(b.name, 'zh-Hans-CN')
+    if (left === null) return 1
+    if (right === null) return -1
+    if (right !== left) return right - left
+    return a.name.localeCompare(b.name, 'zh-Hans-CN')
+  })
+})
+
+/** 总览只回答「最该先处理哪几项」，完整清单留给下方矩阵（§401）。 */
+const COMPARE_LIMIT = 8
+
+const compareSkills = computed(() => gapRankedSkills.value.slice(0, COMPARE_LIMIT))
+const compareRestCount = computed(() => Math.max(0, gapRankedSkills.value.length - COMPARE_LIMIT))
+
 const selectedSkill = computed<SkillCard | null>(() => {
   const byId = sortedSkills.value.find((skill) => skill.skillId === selectedSkillId.value)
   return byId ?? sortedSkills.value[0] ?? null
@@ -320,6 +344,34 @@ watch(() => props.goalId, load)
       />
 
       <template v-else>
+        <!-- 分项差距总览（§4.6 / §401：匹配构成用分项条形图，不用单一总分或环形分数） -->
+        <section class="surface compare">
+          <header class="compare__head">
+            <h2 class="compare__title">分项差距总览</h2>
+            <p class="compare__note">
+              按差距处置优先级排序，逐项对比「要求 / 估计」并标注置信度。
+              不折算成单一总分或匹配度百分比：没有证据的能力保持未知，不参与排序。
+            </p>
+          </header>
+
+          <ul class="compare__list">
+            <li v-for="skill in compareSkills" :key="skill.skillId" class="compare__item">
+              <div class="compare__label">
+                <span class="compare__name">{{ skill.name }}</span>
+                <span class="compare__tags">
+                  <BeautifulStatus :label="gapLabel(skill.gapType)" :tone="gapTone(skill.gapType)" />
+                  <ConfidenceBadge :value="skill.confidence" compact />
+                </span>
+              </div>
+              <LevelCompare :required="skill.requiredLevel" :estimated="skill.estimatedLevel" />
+            </li>
+          </ul>
+
+          <p v-if="compareRestCount > 0" class="compare__more dim">
+            另有 {{ compareRestCount }} 项未在此展示，完整清单见下方能力矩阵。
+          </p>
+        </section>
+
         <div class="bui-table-wrap">
           <table class="bui-table">
             <caption>
@@ -473,6 +525,84 @@ watch(() => props.goalId, load)
 .meta-line {
   font-size: 11.5px;
   line-height: 1.6;
+}
+
+/* ---------- 分项差距总览（§401：分项条形图，不折算单一总分） ---------- */
+.compare {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 22px;
+}
+
+.compare__head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.compare__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.compare__note {
+  max-width: 76ch;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
+.compare__list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.compare__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 1.3fr);
+  align-items: center;
+  gap: 16px;
+}
+
+.compare__label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.compare__name {
+  overflow: hidden;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--color-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compare__tags {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.compare__more {
+  font-size: 12px;
+}
+
+@media (max-width: 767px) {
+  .compare__item {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
 }
 
 /* ---------- 矩阵单元格 ---------- */
