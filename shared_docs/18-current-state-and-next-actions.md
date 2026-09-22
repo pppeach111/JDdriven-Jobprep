@@ -11,8 +11,8 @@
 | 根目录 | `D:\MyProjects\ICT` | 已确认 |
 | Git 仓库 | 已初始化，当前分支 `main` | 已完成 |
 | 代码托管 | `origin` = `https://github.com/pppeach111/JDdriven-Jobprep.git`（GitHub，当前唯一远端）；CodeArts 远端已于 2026-09-16 移除 | 已确认，与 `11` 号文档冲突待确认 |
-| 最新提交 | `acaad90 feat(frontend):add line colomn table`（累计 17 个提交）；`main` 与 `origin/main` 指向同一提交、无待推送 | 已提交，远端已同步 |
-| 工作区 | 有未提交改动：第 6 节第 1 项的 P0 证据链已实现（契约导出 `docs/contracts/` + `scripts/check-contracts.mjs`；后端 `evidence/` 模块与 Flyway V4；前端登记证据表单与 `GoalSwitcher` 点击目标修复；本文档与 `14` / `19` 号同步留痕） | 待提交 |
+| 最新提交 | `70dc040 docs: record P0 evidence chain delivery in state and UI docs`（累计 22 个提交）；`main` 领先 `origin/main` 5 个提交（P0 批次），尚未推送 | 已提交，待推送 |
+| 工作区 | 干净：P0 证据链全部改动已按 5 组 conventional commits 入库（2026-09-22），`git status` 无待提交项 | 已提交 |
 | 产品代码 | 后端 36+ Java 源文件可编译；前端 Vue 3 + TS 骨架可构建；Worker Python 骨架可启动并通过健康检查 | 已产出，核心闭环已实测 |
 | 后端测试 | 101 项全部通过（Failures/Errors/Skipped 均为 0）；含新增 `EvidenceAggregatorTest` 16 项 | 本地验证完成 |
 | Worker 测试 | 79 项通过（`uv run pytest`）；`/health` 与 `/health/ready` 已实测响应（本地 `ready:true`，`degraded:["model"]`） | 本地验证完成 |
@@ -320,7 +320,7 @@ Python 标准库 `ipaddress.is_private` 不覆盖 `100.64.0.0/10`（RFC 6598 运
 
 - 当前任务编号及其依赖；
 - CP-001 为 `PARTIAL`、CP-002 为 `PARTIAL`、CP-003 未开始，而不是未初始化；
-- 应用代码已有 17 个本地提交，`main` 与 `origin/main` 已一致（无待推送）；`frontend/` 已符合 `19` 号设计系统并通过视觉验收矩阵；
+- 应用代码已有 22 个本地提交，`main` 领先 `origin/main` 5 个（P0 批次待推送）；`frontend/` 已符合 `19` 号设计系统并通过视觉验收矩阵；
 - 代码托管为 GitHub 单一远端，CodeArts 远端已移除，该决策与 `11` 号文档冲突且待确认；
 - 本次准备创建或修改的文件；
 - 使用本地 Mock 还是已确认云服务；
@@ -749,7 +749,7 @@ Python 标准库 `ipaddress.is_private` 不覆盖 `100.64.0.0/10`（RFC 6598 运
   - 已知工程注记：Windows 下 curl -d 内联中文 JSON 会因编码损坏得 400，
     改 --data-binary @utf8-file 后通过（属本机验收工具问题，非接口缺陷）
 未完成：
-  - 上述全部改动尚未提交（待用户确认提交分组清单）
+  - 全部改动已按 5 组 conventional commits 入库（`5ff0808`…`70dc040`，累计 22 个提交）；`main` 领先 `origin/main` 5 个提交尚未推送，是否 push 待用户指示
   - 简历文档解析（resume_version 来源）按用户裁决延后
   - 四个一级页面接真实接口仍待新建 CP-003 起的最小契约（第 6 节第 8 项）
   - 19 号 §3.2/§3.3 导航断点文档与实现不符的登记项仍待用户裁决
@@ -759,6 +759,6 @@ Python 标准库 `ipaddress.is_private` 不覆盖 `100.64.0.0/10`（RFC 6598 运
 阻塞：
   - 无（DATABASE_PASSWORD 已由 .tmp-start-backend.ps1 提供，后端已重启并验证）
 下一步：
-  - 列提交分组清单请用户确认后分组提交
-  - 用户验收通过后推进第 6 节第 8 项（CP-003 起最小契约）
+  - 推进第 6 节第 8 项（CP-003 起最小契约，草案先交用户裁决）
+  - P0 批次 5 个提交待用户确认后 push 到 GitHub
 ```
