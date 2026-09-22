@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "x-frontend-interface": "JdParseResult",
+  "description": "JD 解析结果，见 14 号契约第 4 节。",
+  "type": "object",
+  "required": ["schemaVersion", "sourceId", "jobFamily", "requirements", "unknowns", "warnings"],
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "1.0" },
+    "sourceId": { "type": "string" },
+    "jobFamily": {
+      "type": "object",
+      "required": ["value", "confidence"],
+      "properties": {
+        "value": { "type": "string" },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "requirements": {
+      "type": "array",
+      "items": { "$ref": "RequirementView.json" }
+    },
+    "unknowns": { "type": "array", "items": { "type": "string" } },
+    "warnings": { "type": "array", "items": { "type": "string" } }
+  }
+}

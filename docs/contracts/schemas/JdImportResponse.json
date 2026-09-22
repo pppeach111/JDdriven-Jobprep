@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "x-frontend-interface": "JdImportResponse",
+  "description": "JD 导入结果摘要。",
+  "type": "object",
+  "required": ["sourceId", "parseStatus"],
+  "properties": {
+    "sourceId": { "type": "string", "format": "uuid" },
+    "parseStatus": {
+      "type": "string",
+      "enum": ["PENDING", "RUNNING", "SUCCEEDED", "PARTIAL", "FAILED", "CANCELLED"]
+    }
+  }
+}

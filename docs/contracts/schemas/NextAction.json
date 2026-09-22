@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "x-frontend-interface": "NextAction",
+  "description": "下一动作，见 14 号契约第 5 节。taskId 在学习任务模块落地前为 null。",
+  "type": "object",
+  "required": ["type", "taskId", "reason"],
+  "properties": {
+    "type": { "type": "string" },
+    "taskId": { "type": ["string", "null"] },
+    "reason": { "type": "string" }
+  }
+}

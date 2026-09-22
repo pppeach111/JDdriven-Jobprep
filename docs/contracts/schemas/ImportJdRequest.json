@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "x-frontend-interface": "ImportJdRequest",
+  "description": "导入目标 JD 请求。",
+  "type": "object",
+  "required": ["rawText"],
+  "properties": {
+    "rawText": { "type": "string", "minLength": 1, "maxLength": 200000 },
+    "sourceUrl": { "type": ["string", "null"], "maxLength": 1000 }
+  }
+}

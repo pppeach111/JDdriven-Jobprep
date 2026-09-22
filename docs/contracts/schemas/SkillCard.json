@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "x-frontend-interface": "SkillCard",
+  "description": "单个技能的能力卡片，见 14 号契约第 5 节。",
+  "type": "object",
+  "required": [
+    "skillId",
+    "name",
+    "requiredLevel",
+    "estimatedLevel",
+    "confidence",
+    "gapType",
+    "dimensions",
+    "evidenceIds",
+    "sourceQuotes",
+    "nextAction",
+    "updatedAt"
+  ],
+  "properties": {
+    "skillId": { "type": "string" },
+    "name": { "type": "string" },
+    "requiredLevel": { "type": ["integer", "null"], "minimum": 0, "maximum": 5 },
+    "estimatedLevel": { "type": ["number", "null"], "minimum": 0, "maximum": 5 },
+    "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "gapType": {
+      "type": ["string", "null"],
+      "enum": [
+        "QUALIFICATION_BLOCK",
+        "KNOWLEDGE_GAP",
+        "APPLICATION_GAP",
+        "PRACTICE_GAP",
+        "EVIDENCE_GAP",
+        "EXPRESSION_GAP",
+        "CONFLICT",
+        null
+      ]
+    },
+    "dimensions": { "type": ["object", "null"] },
+    "evidenceIds": { "type": "array", "items": { "type": "string" } },
+    "sourceQuotes": { "type": "array", "items": { "type": "string" } },
+    "nextAction": {
+      "oneOf": [{ "$ref": "NextAction.json" }, { "type": "null" }]
+    },
+    "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+  }
+}

@@ -1,0 +1,187 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CareerPath (jobprep) API",
+    "version": "1.0.0",
+    "description": "职径后端 REST 契约导出。单一事实来源为 shared_docs/14-contracts-and-schemas.md（含 2026-09-22 新增第 11 节能力证据登记）。schema 对象定义见 schemas/*.json，与前端 frontend/src/api/types.ts 由 scripts/check-contracts.mjs 校验一致。"
+  },
+  "paths": {
+    "/api/v1/goals": {
+      "get": {
+        "summary": "列出当前用户求职目标",
+        "operationId": "listGoals",
+        "responses": {
+          "200": { "description": "成功", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GoalListEnvelope" } } } },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "summary": "创建求职目标",
+        "operationId": "createGoal",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "schemas/CreateGoalRequest.json" } } } },
+        "responses": {
+          "200": { "description": "成功", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GoalEnvelope" } } } },
+          "400": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/goals/{goalId}": {
+      "get": {
+        "summary": "获取单个求职目标",
+        "operationId": "getGoal",
+        "parameters": [{ "$ref": "#/components/parameters/goalId" }],
+        "responses": {
+          "200": { "description": "成功", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GoalEnvelope" } } } },
+          "404": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/goals/{goalId}/jd": {
+      "post": {
+        "summary": "导入原始 JD 文本",
+        "operationId": "importJd",
+        "parameters": [{ "$ref": "#/components/parameters/goalId" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "schemas/ImportJdRequest.json" } } } },
+        "responses": {
+          "200": { "description": "成功", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JdImportEnvelope" } } } },
+          "400": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/goals/{goalId}/analyze": {
+      "post": {
+        "summary": "规则式解析 JD 为结构化要求",
+        "operationId": "analyzeJd",
+        "parameters": [{ "$ref": "#/components/parameters/goalId" }],
+        "responses": {
+          "200": { "description": "成功", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JdParseEnvelope" } } } },
+          "400": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/goals/{goalId}/capability-map": {
+      "get": {
+        "summary": "聚合生成个人能力图谱",
+        "operationId": "getCapabilityMap",
+        "parameters": [{ "$ref": "#/components/parameters/goalId" }],
+        "responses": {
+          "200": { "description": "成功", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CapabilityMapEnvelope" } } } },
+          "404": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/goals/{goalId}/evidences": {
+      "post": {
+        "summary": "登记一条能力证据并重算受影响技能估计",
+        "operationId": "registerEvidence",
+        "description": "见 14 号契约第 11 节（2026-09-22 新增）。",
+        "parameters": [{ "$ref": "#/components/parameters/goalId" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "schemas/RegisterEvidenceRequest.json" } } } },
+        "responses": {
+          "200": { "description": "成功", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EvidenceEnvelope" } } } },
+          "400": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "get": {
+        "summary": "列出当前用户已登记证据（按 createdAt 降序）",
+        "operationId": "listEvidences",
+        "parameters": [{ "$ref": "#/components/parameters/goalId" }],
+        "responses": {
+          "200": { "description": "成功", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EvidenceListEnvelope" } } } },
+          "404": { "$ref": "#/components/responses/Error" },
+          "500": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "goalId": {
+        "name": "goalId",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string", "format": "uuid" }
+      }
+    },
+    "responses": {
+      "Error": {
+        "description": "统一错误响应",
+        "content": { "application/json": { "schema": { "$ref": "schemas/ErrorResponse.json" } } }
+      }
+    },
+    "schemas": {
+      "GoalEnvelope": {
+        "type": "object",
+        "required": ["schemaVersion", "data", "traceId"],
+        "properties": {
+          "schemaVersion": { "type": "string", "const": "1.0" },
+          "data": { "$ref": "schemas/JobGoal.json" },
+          "traceId": { "type": "string" }
+        }
+      },
+      "GoalListEnvelope": {
+        "type": "object",
+        "required": ["schemaVersion", "data", "traceId"],
+        "properties": {
+          "schemaVersion": { "type": "string", "const": "1.0" },
+          "data": { "type": "array", "items": { "$ref": "schemas/JobGoal.json" } },
+          "traceId": { "type": "string" }
+        }
+      },
+      "JdImportEnvelope": {
+        "type": "object",
+        "required": ["schemaVersion", "data", "traceId"],
+        "properties": {
+          "schemaVersion": { "type": "string", "const": "1.0" },
+          "data": { "$ref": "schemas/JdImportResponse.json" },
+          "traceId": { "type": "string" }
+        }
+      },
+      "JdParseEnvelope": {
+        "type": "object",
+        "required": ["schemaVersion", "data", "traceId"],
+        "properties": {
+          "schemaVersion": { "type": "string", "const": "1.0" },
+          "data": { "$ref": "schemas/JdParseResult.json" },
+          "traceId": { "type": "string" }
+        }
+      },
+      "CapabilityMapEnvelope": {
+        "type": "object",
+        "required": ["schemaVersion", "data", "traceId"],
+        "properties": {
+          "schemaVersion": { "type": "string", "const": "1.0" },
+          "data": { "$ref": "schemas/CapabilityMap.json" },
+          "traceId": { "type": "string" }
+        }
+      },
+      "EvidenceEnvelope": {
+        "type": "object",
+        "required": ["schemaVersion", "data", "traceId"],
+        "properties": {
+          "schemaVersion": { "type": "string", "const": "1.0" },
+          "data": { "$ref": "schemas/EvidenceView.json" },
+          "traceId": { "type": "string" }
+        }
+      },
+      "EvidenceListEnvelope": {
+        "type": "object",
+        "required": ["schemaVersion", "data", "traceId"],
+        "properties": {
+          "schemaVersion": { "type": "string", "const": "1.0" },
+          "data": { "type": "array", "items": { "$ref": "schemas/EvidenceView.json" } },
+          "traceId": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "x-frontend-interface": "CapabilityMap",
+  "description": "个人能力图谱，见 14 号契约第 5 节。",
+  "type": "object",
+  "required": ["schemaVersion", "goalId", "skills"],
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "1.0" },
+    "goalId": { "type": "string", "format": "uuid" },
+    "skills": {
+      "type": "array",
+      "items": { "$ref": "SkillCard.json" }
+    }
+  }
+}

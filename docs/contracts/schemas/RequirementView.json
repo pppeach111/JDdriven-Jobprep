@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "x-frontend-interface": "RequirementView",
+  "description": "JD 解析出的单条结构化要求，见 14 号契约第 4 节。",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "field",
+    "value",
+    "skillId",
+    "requiredLevel",
+    "importance",
+    "explicit",
+    "sourceQuote",
+    "sourceLocator",
+    "confidence"
+  ],
+  "properties": {
+    "id": { "type": "string" },
+    "type": { "type": "string", "enum": ["HARD_GATE", "CORE", "PREFERRED", "BONUS"] },
+    "field": { "type": ["string", "null"] },
+    "value": { "type": ["object", "null"] },
+    "skillId": { "type": ["string", "null"] },
+    "requiredLevel": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "maximum": 5,
+      "description": "无法从原文确定时必须为 null，不得用默认值冒充已知。"
+    },
+    "importance": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "explicit": { "type": "boolean" },
+    "sourceQuote": { "type": ["string", "null"] },
+    "sourceLocator": { "type": ["object", "null"] },
+    "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "x-frontend-interface": "JobGoal",
+  "description": "求职目标，对应后端 JobGoalResponse 与前端 JobGoal。",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "jobFamily",
+    "city",
+    "employmentType",
+    "graduationYear",
+    "availableFrom",
+    "weeklyHours",
+    "status",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "name": { "type": "string" },
+    "jobFamily": { "type": "string" },
+    "city": { "type": ["string", "null"] },
+    "employmentType": { "type": ["string", "null"] },
+    "graduationYear": { "type": ["integer", "null"] },
+    "availableFrom": { "type": ["string", "null"], "format": "date" },
+    "weeklyHours": { "type": ["integer", "null"] },
+    "status": { "type": "string", "enum": ["ACTIVE", "ARCHIVED"] },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}

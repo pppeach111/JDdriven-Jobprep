@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "x-frontend-interface": "RegisterEvidenceRequest",
+  "description": "登记能力证据请求，见 14 号契约第 11 节（2026-09-22 新增）。",
+  "type": "object",
+  "required": ["type", "title", "links"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "SELF_CLAIM",
+        "RESUME_CLAIM",
+        "COURSE",
+        "CERTIFICATE",
+        "PROJECT",
+        "CODE",
+        "OBJECTIVE_TEST",
+        "SCENARIO_TEST",
+        "INTERVIEW",
+        "MICRO_PRACTICE",
+        "PROJECT_RESULT"
+      ]
+    },
+    "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "contentSummary": { "type": ["string", "null"], "maxLength": 2000 },
+    "credibility": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "maximum": 1,
+      "description": "null 时由类型基准权重决定，不得在前端伪造默认值。"
+    },
+    "links": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "required": ["skillId", "direction", "claimedLevel", "strength"],
+        "properties": {
+          "skillId": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "direction": {
+            "type": "string",
+            "enum": ["SUPPORTS", "WEAKENS", "NEUTRAL"]
+          },
+          "claimedLevel": {
+            "type": ["integer", "null"],
+            "minimum": 0,
+            "maximum": 5,
+            "description": "SUPPORTS 时必填；WEAKENS/NEUTRAL 时可为 null。"
+          },
+          "strength": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 1,
+            "description": "null 视为 1.0。"
+          }
+        }
+      }
+    }
+  }
+}

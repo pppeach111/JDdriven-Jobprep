@@ -290,3 +290,108 @@ score: 0..100，除非具体评分量表另有说明
 - 旧数据缺失字段进入 `UNKNOWN`，不得用默认值伪造证据；
 - 每次契约变更附带一条回归测试和变更记录。
 
+## 11. 能力证据登记（2026-09-22 新增，用户批准 P0 范围）
+
+> 本节为 CP-004 证据链的最小契约：只复用第 2 节既有枚举（`EvidenceType` / `EvidenceDirection` / `GapType`），
+> 不新增枚举值。机器可读导出物见 `docs/contracts/`，与本节同步维护。
+
+### 11.1 接口
+
+| Method | Path | 说明 |
+|---|---|---|
+| POST | `/api/v1/goals/{goalId}/evidences` | 登记一条证据，并重算受影响技能的估计 |
+| GET | `/api/v1/goals/{goalId}/evidences` | 列出当前用户已登记证据，按 `createdAt` 降序；MVP 不分页，量级增长后启用 `PaginatedResponse` |
+
+### 11.2 登记请求 `RegisterEvidenceRequest`
+
+```json
+{
+  "type": "PROJECT_RESULT",
+  "title": "校园二手书交易平台",
+  "contentSummary": "独立完成下单与库存模块，代码与演示视频见仓库",
+  "credibility": null,
+  "links": [
+    {
+      "skillId": "spring-boot",
+      "direction": "SUPPORTS",
+      "claimedLevel": 3,
+      "strength": null
+    }
+  ]
+}
+```
+
+- `type`：`EvidenceType`，必填；
+- `title`：1..200，必填；
+- `contentSummary`：≤2000，可空；
+- `credibility`：0.0..1.0，可空；`null` 时由类型基准权重决定（见 11.4），不得在前端伪造默认值；
+- `links`：1..20，必填；
+  - `skillId` 必须已存在于技能库，同一请求内不得重复；
+  - `direction`：`EvidenceDirection`；
+  - `claimedLevel`：0..5 整数，`SUPPORTS` 时必填，`WEAKENS` / `NEUTRAL` 时可为 `null`；
+  - `strength`：0.0..1.0，可空；`null` 视为 `1.0`。
+
+### 11.3 响应 `EvidenceView`
+
+```json
+{
+  "schemaVersion": "1.0",
+  "data": {
+    "evidenceId": "0f2b1c0e-…",
+    "type": "PROJECT_RESULT",
+    "title": "校园二手书交易平台",
+    "contentSummary": "独立完成下单与库存模块，代码与演示视频见仓库",
+    "credibility": 0.80,
+    "occurredAt": null,
+    "createdAt": "2026-09-22T08:30:00Z",
+    "links": [
+      {
+        "skillId": "spring-boot",
+        "skillName": "Spring Boot",
+        "direction": "SUPPORTS",
+        "strength": null,
+        "claimedLevel": 3
+      }
+    ],
+    "updatedEstimates": [
+      {
+        "skillId": "spring-boot",
+        "estimatedLevel": 3.0,
+        "confidence": 0.44,
+        "gapType": "KNOWLEDGE_GAP"
+      }
+    ]
+  },
+  "traceId": "01JEXAMPLE"
+}
+```
+
+- `updatedEstimates` 返回本次登记触发重算后各技能的估计结果，字段与第 5 节 `SkillCard` 同名同义；
+  GET 列表场景不触发重算，该字段表示受影响技能的**当前**估计现值（估计行不存在时按 11.3 占位语义呈现：`null` / `0.10` / `EVIDENCE_GAP`）；
+- `gapType` 语义：估计等级 ≥ 岗位要求或要求未知 → `null`（无明显差距）；估计等级低于要求 → `KNOWLEDGE_GAP`；无证据支撑 → `EVIDENCE_GAP`。
+
+### 11.4 聚合规则（MVP，程序计算，模型不得直接写入估计）
+
+- 类型基准权重 `w(type)`：
+
+| type | w | type | w |
+|---|---|---|---|
+| SELF_CLAIM | 0.30 | CODE | 0.70 |
+| RESUME_CLAIM | 0.45 | PROJECT_RESULT | 0.80 |
+| COURSE | 0.55 | INTERVIEW | 0.80 |
+| MICRO_PRACTICE | 0.60 | OBJECTIVE_TEST | 0.85 |
+| CERTIFICATE | 0.65 | SCENARIO_TEST | 0.85 |
+| PROJECT | 0.70 | | |
+
+- 证据显式提供 `credibility` 时覆盖类型基准权重；
+- `estimatedLevel = Σ(w × strength × claimedLevel) / Σ(w × strength)`，仅统计 `SUPPORTS` 且 `claimedLevel` 非空的链接，四舍五入到 0.1；
+- `confidence = min(0.95, Σ(w × strength) / (Σ(w × strength) + 1.0))`，每条 `WEAKENS` 链接额外扣减 0.15、下限 0.05，四舍五入到 0.01；
+- 不存在 `SUPPORTS` 且 `claimedLevel` 非空的链接时：`estimatedLevel = null`、`gapType = EVIDENCE_GAP`、`confidence = 0.10`（与第 5 节"未知不猜测"一致）；
+- 本权重表为 MVP 取值，后续 CP-004 完整版修订时同步本节与回归测试，不得在实现里静默改值。
+
+### 11.5 对既有契约的兼容影响
+
+- 第 5 节 `SkillCard.evidenceIds` / `sourceQuotes` 由占位空数组改为填充真实证据引用（字段本身不变）；
+- `user_skill_estimate.gap_type` 从只产出 `EVIDENCE_GAP` / `KNOWLEDGE_GAP`（占位）扩展为 11.3 的三种取值，仍在第 2.1 节枚举内；
+- 数据库仅新增可空列 `evidence_skill_link.claimed_level`（Flyway V4），不改已有列语义。
+

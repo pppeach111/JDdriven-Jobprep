@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "x-frontend-interface": "EvidenceView",
+  "description": "一条已登记的证据与受影响技能的重算结果，见 14 号契约第 11 节（2026-09-22 新增）。",
+  "type": "object",
+  "required": [
+    "evidenceId",
+    "type",
+    "title",
+    "contentSummary",
+    "credibility",
+    "occurredAt",
+    "createdAt",
+    "links",
+    "updatedEstimates"
+  ],
+  "properties": {
+    "evidenceId": { "type": "string", "format": "uuid" },
+    "type": {
+      "type": "string",
+      "enum": [
+        "SELF_CLAIM",
+        "RESUME_CLAIM",
+        "COURSE",
+        "CERTIFICATE",
+        "PROJECT",
+        "CODE",
+        "OBJECTIVE_TEST",
+        "SCENARIO_TEST",
+        "INTERVIEW",
+        "MICRO_PRACTICE",
+        "PROJECT_RESULT"
+      ]
+    },
+    "title": { "type": "string" },
+    "contentSummary": { "type": ["string", "null"] },
+    "credibility": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "occurredAt": { "type": ["string", "null"], "format": "date-time" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["skillId", "skillName", "direction", "strength", "claimedLevel"],
+        "properties": {
+          "skillId": { "type": "string" },
+          "skillName": { "type": "string" },
+          "direction": {
+            "type": "string",
+            "enum": ["SUPPORTS", "WEAKENS", "NEUTRAL"]
+          },
+          "strength": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+          "claimedLevel": { "type": ["integer", "null"], "minimum": 0, "maximum": 5 }
+        }
+      }
+    },
+    "updatedEstimates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "x-frontend-interface": "UpdatedEstimate",
+        "required": ["skillId", "estimatedLevel", "confidence", "gapType"],
+        "properties": {
+          "skillId": { "type": "string" },
+          "estimatedLevel": { "type": ["number", "null"], "minimum": 0, "maximum": 5 },
+          "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+          "gapType": {
+            "type": ["string", "null"],
+            "enum": [
+              "QUALIFICATION_BLOCK",
+              "KNOWLEDGE_GAP",
+              "APPLICATION_GAP",
+              "PRACTICE_GAP",
+              "EVIDENCE_GAP",
+              "EXPRESSION_GAP",
+              "CONFLICT",
+              null
+            ]
+          }
+        }
+      }
+    }
+  }
+}

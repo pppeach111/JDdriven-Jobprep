@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "x-frontend-interface": "ErrorResponse",
+  "title": "ErrorResponse",
+  "description": "统一失败响应外层，对应 shared_docs/14-contracts-and-schemas.md 第 3 节。",
+  "type": "object",
+  "required": ["schemaVersion", "error", "traceId"],
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "1.0" },
+    "error": {
+      "type": "object",
+      "required": ["code", "message", "details", "retryable"],
+      "properties": {
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "details": { "type": "object" },
+        "retryable": { "type": "boolean" }
+      }
+    },
+    "traceId": { "type": "string" }
+  }
+}

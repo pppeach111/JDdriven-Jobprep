@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "x-frontend-interface": "CreateGoalRequest",
+  "description": "创建求职目标请求，见 14 号契约第 3 节请求体约定。",
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "jobFamily": { "type": ["string", "null"] },
+    "city": { "type": ["string", "null"] },
+    "employmentType": { "type": ["string", "null"] },
+    "graduationYear": { "type": ["integer", "null"] },
+    "availableFrom": { "type": ["string", "null"], "format": "date" },
+    "weeklyHours": { "type": ["integer", "null"] }
+  }
+}
