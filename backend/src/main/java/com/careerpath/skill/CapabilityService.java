@@ -2,6 +2,9 @@ package com.careerpath.skill;
 
 import com.careerpath.common.error.BusinessException;
 import com.careerpath.common.error.ErrorCode;
+import com.careerpath.evidence.Evidence;
+import com.careerpath.evidence.EvidenceSkillLink;
+import com.careerpath.evidence.EvidenceSkillLinkRepository;
 import com.careerpath.goal.JobGoalRepository;
 import com.careerpath.jd.JobRequirement;
 import com.careerpath.jd.JobRequirementRepository;
@@ -41,15 +44,18 @@ public class CapabilityService {
     private final JobRequirementRepository requirementRepository;
     private final SkillRepository skillRepository;
     private final UserSkillEstimateRepository estimateRepository;
+    private final EvidenceSkillLinkRepository evidenceLinkRepository;
 
     public CapabilityService(JobGoalRepository goalRepository,
                              JobRequirementRepository requirementRepository,
                              SkillRepository skillRepository,
-                             UserSkillEstimateRepository estimateRepository) {
+                             UserSkillEstimateRepository estimateRepository,
+                             EvidenceSkillLinkRepository evidenceLinkRepository) {
         this.goalRepository = goalRepository;
         this.requirementRepository = requirementRepository;
         this.skillRepository = skillRepository;
         this.estimateRepository = estimateRepository;
+        this.evidenceLinkRepository = evidenceLinkRepository;
     }
 
     @Transactional
@@ -73,6 +79,16 @@ public class CapabilityService {
                     .map(Skill::getName)
                     .orElse(skillId);
 
+            List<EvidenceSkillLink> links = evidenceLinkRepository
+                    .findBySkillIdAndEvidence_UserIdOrderByCreatedAtAsc(skillId, userId);
+            List<String> evidenceIds = links.stream()
+                    .map(link -> link.getEvidence().getId().toString())
+                    .toList();
+            List<String> sourceQuotes = links.stream()
+                    .map(link -> quoteOf(link.getEvidence()))
+                    .filter(quote -> !quote.isEmpty())
+                    .toList();
+
             cards.add(new CapabilityMap.SkillCard(
                     skillId,
                     name,
@@ -81,8 +97,8 @@ public class CapabilityService {
                     estimate.getConfidence(),
                     estimate.getGapType(),
                     estimate.getDimensions(),
-                    List.of(),
-                    List.of(),
+                    evidenceIds,
+                    sourceQuotes,
                     buildNextAction(estimate.getGapType()),
                     estimate.getUpdatedAt()));
         }
@@ -152,6 +168,23 @@ public class CapabilityService {
         }
         return null;
     }
+
+    /**
+     * 证据引用原文（契约第 5 节 sourceQuotes）：优先证据说明，缺失时回退标题；最长保留 80 字符。
+     */
+    private static String quoteOf(Evidence evidence) {
+        String summary = evidence.getContentSummary();
+        if (summary != null && !summary.isBlank()) {
+            return summary.length() <= QUOTE_MAX_LENGTH ? summary : summary.substring(0, QUOTE_MAX_LENGTH);
+        }
+        String title = evidence.getTitle();
+        if (title == null) {
+            return "";
+        }
+        return title.length() <= QUOTE_MAX_LENGTH ? title : title.substring(0, QUOTE_MAX_LENGTH);
+    }
+
+    private static final int QUOTE_MAX_LENGTH = 80;
 
     public Optional<UserSkillEstimate> findEstimate(UUID userId, UUID goalId, String skillId) {
         return estimateRepository.findByUserIdAndGoalIdAndSkillId(userId, goalId, skillId);
