@@ -3,10 +3,12 @@ import type {
   CapabilityMap,
   CreateGoalRequest,
   ErrorResponse,
+  EvidenceView,
   ImportJdRequest,
   JdImportResponse,
   JdParseResult,
   JobGoal,
+  RegisterEvidenceRequest,
 } from './types'
 
 const BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '')
@@ -119,5 +121,19 @@ export const api = {
     return request<CapabilityMap>(
       `/api/v1/goals/${encodeURIComponent(goalId)}/capability-map`,
     )
+  },
+
+  registerEvidence(
+    goalId: string,
+    body: RegisterEvidenceRequest,
+  ): Promise<ApiResponse<EvidenceView>> {
+    return request<EvidenceView>(`/api/v1/goals/${encodeURIComponent(goalId)}/evidences`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  },
+
+  listEvidences(goalId: string): Promise<ApiResponse<EvidenceView[]>> {
+    return request<EvidenceView[]>(`/api/v1/goals/${encodeURIComponent(goalId)}/evidences`)
   },
 }

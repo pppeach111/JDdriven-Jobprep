@@ -10,7 +10,15 @@ import BeautifulPageHeader from '@/components/BeautifulPageHeader.vue'
 import BeautifulStatus from '@/components/BeautifulStatus.vue'
 import ConfidenceBadge from '@/components/ConfidenceBadge.vue'
 import LevelCompare from '@/components/LevelCompare.vue'
-import type { CapabilityMap, GapType, SkillCard } from '@/api/types'
+import type {
+  CapabilityMap,
+  EvidenceDirection,
+  EvidenceType,
+  EvidenceView,
+  GapType,
+  RegisterEvidenceRequest,
+  SkillCard,
+} from '@/api/types'
 import { formatDateTime, formatLevel } from '@/utils/format'
 
 /**
@@ -236,6 +244,138 @@ function isStale(skill: SkillCard): boolean {
   return elapsed > STALE_DAYS * 24 * 60 * 60 * 1000
 }
 
+// ---------- 登记证据（14 号契约 §11，2026-09-22 新增） ----------
+// 表单录入 → 后端按类型权重聚合出估计 → 图谱「当前等级」点亮。
+// 诚实性约束：等级估计由后端程序计算；自称类证据权重最低，界面不得预填或暗示具体结果。
+
+const EVIDENCE_TYPE_OPTIONS: Array<{ value: EvidenceType; label: string }> = [
+  { value: 'SELF_CLAIM', label: '自我评价（自称）' },
+  { value: 'RESUME_CLAIM', label: '简历陈述' },
+  { value: 'COURSE', label: '课程学习' },
+  { value: 'CERTIFICATE', label: '证书' },
+  { value: 'PROJECT', label: '项目经历' },
+  { value: 'CODE', label: '代码产出' },
+  { value: 'OBJECTIVE_TEST', label: '客观测验' },
+  { value: 'SCENARIO_TEST', label: '情景测验' },
+  { value: 'INTERVIEW', label: '面试表现' },
+  { value: 'MICRO_PRACTICE', label: '微实践' },
+  { value: 'PROJECT_RESULT', label: '项目成果' },
+]
+
+const DIRECTION_OPTIONS: Array<{ value: EvidenceDirection; label: string }> = [
+  { value: 'SUPPORTS', label: '支撑（提升等级估计）' },
+  { value: 'WEAKENS', label: '削弱（降低置信度）' },
+  { value: 'NEUTRAL', label: '关联（仅记录）' },
+]
+
+interface EvidenceFormLink {
+  skillId: string
+  direction: EvidenceDirection
+  claimedLevel: number | null
+}
+
+const showEvidenceForm = ref(false)
+const submitting = ref(false)
+const formError = ref('')
+const formErrorTrace = ref('')
+const lastResult = ref<EvidenceView | null>(null)
+
+function defaultEvidenceForm(): {
+  type: EvidenceType
+  title: string
+  contentSummary: string
+  links: EvidenceFormLink[]
+} {
+  return {
+    type: 'PROJECT_RESULT',
+    title: '',
+    contentSummary: '',
+    links: [{ skillId: '', direction: 'SUPPORTS', claimedLevel: 3 }],
+  }
+}
+
+const evidenceForm = ref(defaultEvidenceForm())
+
+function resetEvidenceForm() {
+  evidenceForm.value = defaultEvidenceForm()
+  showEvidenceForm.value = false
+  submitting.value = false
+  formError.value = ''
+  formErrorTrace.value = ''
+  lastResult.value = null
+}
+
+function addLink() {
+  if (evidenceForm.value.links.length >= 20) return
+  evidenceForm.value.links.push({ skillId: '', direction: 'SUPPORTS', claimedLevel: 3 })
+}
+
+function removeLink(index: number) {
+  if (evidenceForm.value.links.length <= 1) return
+  evidenceForm.value.links.splice(index, 1)
+}
+
+function toggleEvidenceForm() {
+  showEvidenceForm.value = !showEvidenceForm.value
+  formError.value = ''
+  formErrorTrace.value = ''
+  lastResult.value = null
+}
+
+function skillNameOf(skillId: string): string {
+  return skills.value.find((skill) => skill.skillId === skillId)?.name ?? skillId
+}
+
+async function submitEvidence() {
+  formError.value = ''
+  formErrorTrace.value = ''
+
+  const form = evidenceForm.value
+  const title = form.title.trim()
+  if (!title) {
+    formError.value = '请填写证据标题。'
+    return
+  }
+  if (form.links.some((link) => !link.skillId)) {
+    formError.value = '每条关联都要选择技能；不需要的行请移除。'
+    return
+  }
+  if (form.links.some((link) => link.direction === 'SUPPORTS' && link.claimedLevel === null)) {
+    formError.value = '方向为「支撑」的关联必须声明等级（L0..L5）；不确定请选「不声明等级」并改用「关联」。'
+    return
+  }
+
+  const payload: RegisterEvidenceRequest = {
+    type: form.type,
+    title,
+    contentSummary: form.contentSummary.trim() === '' ? null : form.contentSummary.trim(),
+    credibility: null,
+    links: form.links.map((link) => ({
+      skillId: link.skillId,
+      direction: link.direction,
+      claimedLevel: link.claimedLevel,
+      strength: null,
+    })),
+  }
+
+  submitting.value = true
+  try {
+    const response = await api.registerEvidence(props.goalId, payload)
+    lastResult.value = response.data
+    evidenceForm.value = defaultEvidenceForm()
+    await load()
+  } catch (error) {
+    if (error instanceof ApiError) {
+      formError.value = error.message
+      formErrorTrace.value = error.traceId
+    } else {
+      formError.value = '登记证据失败，请稍后重试。'
+    }
+  } finally {
+    submitting.value = false
+  }
+}
+
 async function load() {
   loading.value = true
   errorMessage.value = ''
@@ -259,7 +399,13 @@ async function load() {
 }
 
 onMounted(load)
-watch(() => props.goalId, load)
+watch(
+  () => props.goalId,
+  () => {
+    resetEvidenceForm()
+    load()
+  },
+)
 </script>
 
 <template>
@@ -283,6 +429,14 @@ watch(() => props.goalId, load)
       </template>
 
       <template #actions>
+        <BeautifulButton
+          variant="secondary"
+          type="button"
+          :aria-expanded="showEvidenceForm"
+          @click="toggleEvidenceForm"
+        >
+          {{ showEvidenceForm ? '收起证据表单' : '登记证据' }}
+        </BeautifulButton>
         <BeautifulButton variant="secondary" :to="`/goals/${goalId}/jd`">重新解析 JD</BeautifulButton>
         <BeautifulButton variant="primary" to="/goals/new">新建目标</BeautifulButton>
       </template>
@@ -335,6 +489,112 @@ watch(() => props.goalId, load)
         </div>
         <p class="dim meta-line">共 {{ sortedSkills.length }} 行 · 点击任意行查看证据与维度</p>
       </div>
+
+      <!-- 登记证据（14 号契约 §11，2026-09-22）：表单录入 → 后端程序聚合 → 「当前等级」点亮 -->
+      <section v-if="showEvidenceForm" class="surface evidence-form" aria-labelledby="evidence-form-title">
+        <header class="evidence-form__head">
+          <h2 id="evidence-form-title" class="evidence-form__title">登记证据</h2>
+          <p class="dim meta-line">
+            按「证据类型 × 声称等级」由后端程序聚合出当前估计；自称类证据权重最低，不折算单一总分。
+          </p>
+        </header>
+
+        <div v-if="lastResult" class="evidence-form__result" role="status">
+          <BeautifulStatus label="已登记，估计已重算" tone="good" />
+          <ul class="evidence-form__updates">
+            <li
+              v-for="estimate in lastResult.updatedEstimates"
+              :key="estimate.skillId"
+              class="evidence-form__update"
+            >
+              <span class="mono">{{ skillNameOf(estimate.skillId) }}</span>
+              <span>当前估计 {{ formatLevel(estimate.estimatedLevel) }}</span>
+              <ConfidenceBadge :value="estimate.confidence" compact />
+              <BeautifulStatus :label="gapLabel(estimate.gapType)" :tone="gapTone(estimate.gapType)" />
+            </li>
+          </ul>
+        </div>
+
+        <p v-if="formError" class="alert" role="alert">
+          <span class="alert__text">{{ formError }}</span>
+          <span v-if="formErrorTrace" class="alert__trace mono">traceId: {{ formErrorTrace }}</span>
+        </p>
+
+        <form class="form" @submit.prevent="submitEvidence">
+          <div class="evidence-form__grid">
+            <div class="field">
+              <label class="field__label" for="evidence-type">证据类型</label>
+              <select id="evidence-type" v-model="evidenceForm.type" class="select">
+                <option v-for="option in EVIDENCE_TYPE_OPTIONS" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+              <span class="field__hint">类型决定该证据的基准权重（14 号契约 §11.4）。</span>
+            </div>
+            <div class="field">
+              <label class="field__label" for="evidence-title">证据标题</label>
+              <input id="evidence-title" v-model="evidenceForm.title" class="input" type="text" maxlength="200" />
+              <span class="field__hint">如：校园二手书交易平台（课程设计）。</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="evidence-summary">证据说明（可选）</label>
+            <textarea
+              id="evidence-summary"
+              v-model="evidenceForm.contentSummary"
+              class="input"
+              rows="2"
+              maxlength="2000"
+            ></textarea>
+            <span class="field__hint">会作为「证据引用」展示在对应能力的详情区，写清做了什么、验证到什么程度。</span>
+          </div>
+
+          <fieldset class="evidence-form__links">
+            <legend class="field__label">关联技能（{{ evidenceForm.links.length }} / 20）</legend>
+            <div v-for="(link, index) in evidenceForm.links" :key="index" class="evidence-form__link">
+              <select v-model="link.skillId" class="select" :aria-label="`第 ${index + 1} 行技能`">
+                <option value="" disabled>选择技能</option>
+                <option v-for="skill in skills" :key="skill.skillId" :value="skill.skillId">
+                  {{ skill.name }}
+                </option>
+              </select>
+              <select v-model="link.direction" class="select" :aria-label="`第 ${index + 1} 行方向`">
+                <option v-for="option in DIRECTION_OPTIONS" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+              <select v-model="link.claimedLevel" class="select" :aria-label="`第 ${index + 1} 行声称等级`">
+                <option :value="null">不声明等级</option>
+                <option v-for="level in 6" :key="level - 1" :value="level - 1">L{{ level - 1 }}</option>
+              </select>
+              <button
+                type="button"
+                class="evidence-form__remove"
+                :disabled="evidenceForm.links.length === 1"
+                @click="removeLink(index)"
+              >
+                移除
+              </button>
+            </div>
+            <button
+              type="button"
+              class="evidence-form__add"
+              :disabled="evidenceForm.links.length >= 20"
+              @click="addLink"
+            >
+              添加一项技能
+            </button>
+          </fieldset>
+
+          <div class="evidence-form__actions">
+            <BeautifulButton type="submit" variant="primary" :disabled="submitting">
+              {{ submitting ? '提交中…' : '提交证据' }}
+            </BeautifulButton>
+            <BeautifulButton type="button" variant="secondary" @click="toggleEvidenceForm">收起</BeautifulButton>
+          </div>
+        </form>
+      </section>
 
       <BeautifulEmptyState
         v-if="sortedSkills.length === 0"
@@ -602,6 +862,119 @@ watch(() => props.goalId, load)
   .compare__item {
     grid-template-columns: minmax(0, 1fr);
     gap: 8px;
+  }
+}
+
+/* ---------- 登记证据（14 号契约 §11） ---------- */
+.evidence-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 22px;
+}
+
+.evidence-form__head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.evidence-form__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.evidence-form__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.evidence-form__result {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-subtle);
+}
+
+.evidence-form__updates {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.evidence-form__update {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+  color: var(--color-text);
+}
+
+.evidence-form__links {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+
+.evidence-form__link {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.2fr) minmax(0, 0.8fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.evidence-form__remove,
+.evidence-form__add {
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.evidence-form__remove:disabled,
+.evidence-form__add:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.evidence-form__remove:not(:disabled):hover,
+.evidence-form__add:not(:disabled):hover {
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+
+.evidence-form__add {
+  align-self: flex-start;
+}
+
+.evidence-form__actions {
+  display: flex;
+  gap: 10px;
+}
+
+@media (max-width: 767px) {
+  .evidence-form__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .evidence-form__link {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

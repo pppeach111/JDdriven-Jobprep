@@ -152,3 +152,66 @@ export interface CapabilityMap {
   goalId: string
   skills: SkillCard[]
 }
+// ============================================================
+// 能力证据（14 号契约第 11 节，2026-09-22 新增）
+// ============================================================
+
+export type EvidenceType =
+  | 'SELF_CLAIM'
+  | 'RESUME_CLAIM'
+  | 'COURSE'
+  | 'CERTIFICATE'
+  | 'PROJECT'
+  | 'CODE'
+  | 'OBJECTIVE_TEST'
+  | 'SCENARIO_TEST'
+  | 'INTERVIEW'
+  | 'MICRO_PRACTICE'
+  | 'PROJECT_RESULT'
+
+export type EvidenceDirection = 'SUPPORTS' | 'WEAKENS' | 'NEUTRAL'
+
+export interface EvidenceLinkInput {
+  skillId: string
+  direction: EvidenceDirection
+  /** SUPPORTS 时必填；WEAKENS/NEUTRAL 时可为 null。 */
+  claimedLevel: number | null
+  /** null 视为 1.0。 */
+  strength: number | null
+}
+
+export interface RegisterEvidenceRequest {
+  type: EvidenceType
+  title: string
+  contentSummary?: string | null
+  /** null 时由后端类型基准权重决定，不得在前端伪造默认值。 */
+  credibility?: number | null
+  links: EvidenceLinkInput[]
+}
+
+export interface EvidenceLinkView {
+  skillId: string
+  skillName: string
+  direction: EvidenceDirection
+  strength: number | null
+  claimedLevel: number | null
+}
+
+export interface UpdatedEstimate {
+  skillId: string
+  estimatedLevel: number | null
+  confidence: number | null
+  gapType: GapType | null
+}
+
+export interface EvidenceView {
+  evidenceId: string
+  type: EvidenceType
+  title: string
+  contentSummary: string | null
+  credibility: number | null
+  occurredAt: string | null
+  createdAt: string
+  links: EvidenceLinkView[]
+  updatedEstimates: UpdatedEstimate[]
+}
