@@ -4,20 +4,20 @@
 
 ## 1. 状态快照
 
-状态日期：2026-09-21
+状态日期：2026-09-22
 
 | 项目 | 当前事实 | 状态 |
 |---|---|---|
 | 根目录 | `D:\MyProjects\ICT` | 已确认 |
 | Git 仓库 | 已初始化，当前分支 `main` | 已完成 |
 | 代码托管 | `origin` = `https://github.com/pppeach111/JDdriven-Jobprep.git`（GitHub，当前唯一远端）；CodeArts 远端已于 2026-09-16 移除 | 已确认，与 `11` 号文档冲突待确认 |
-| 最新提交 | `b3f6bc3 docs: record contract fixes and end-to-end verification`（累计 16 个提交）；`main` 与 `origin/main` 指向同一提交、无待推送，此前“因 `github.com:443` 不可达尚未推送”的记录已不成立 | 已提交，远端已同步 |
-| 工作区 | 有未提交改动：第 5 节 E 的导航与图谱改造已实现（新增 `frontend/src/composables/useCurrentGoal.ts`、`frontend/src/components/GoalSwitcher.vue`，修改 `App.vue` / `GoalCreateView.vue` / `CapabilityMapView.vue`，并同步 `19` 号文档 §3.2 / §4.6 / §18）；本文档改动同样未提交 | 待提交 |
-| 产品代码 | 后端 36 个 Java 源文件可编译；前端 Vue 3 + TS 骨架可构建；Worker Python 骨架可启动并通过健康检查 | 已产出，核心闭环已实测 |
-| 后端测试 | 84 项全部通过（Failures/Errors/Skipped 均为 0）；其中 `RuleBasedJdParserTest` 由 32 项增至 38 项 | 本地验证完成 |
+| 最新提交 | `acaad90 feat(frontend):add line colomn table`（累计 17 个提交）；`main` 与 `origin/main` 指向同一提交、无待推送 | 已提交，远端已同步 |
+| 工作区 | 有未提交改动：第 6 节第 1 项的 P0 证据链已实现（契约导出 `docs/contracts/` + `scripts/check-contracts.mjs`；后端 `evidence/` 模块与 Flyway V4；前端登记证据表单与 `GoalSwitcher` 点击目标修复；本文档与 `14` / `19` 号同步留痕） | 待提交 |
+| 产品代码 | 后端 36+ Java 源文件可编译；前端 Vue 3 + TS 骨架可构建；Worker Python 骨架可启动并通过健康检查 | 已产出，核心闭环已实测 |
+| 后端测试 | 101 项全部通过（Failures/Errors/Skipped 均为 0）；含新增 `EvidenceAggregatorTest` 16 项 | 本地验证完成 |
 | Worker 测试 | 79 项通过（`uv run pytest`）；`/health` 与 `/health/ready` 已实测响应（本地 `ready:true`，`degraded:["model"]`） | 本地验证完成 |
-| 前端设计系统符合度 | `frontend/` 已按 `19` 号文档重构（浅色靛蓝紫、顶部横向导航、玻璃拟态受 §4.5 约束），并完成 Beautiful UI 本地适配；本轮导航与图谱改造后已重跑四档视口 + 键盘可达性 + 对比度验收，全部通过 | 已符合，视觉与无障碍验收矩阵已执行 |
-| 数据库与端到端 | 本地 PostgreSQL 17.5 已创建 `career_path` 角色与库，Flyway 迁移至 v3；`目标 → JD 导入 → 解析 → 能力图谱 → 前端呈现` 已用真实数据实测跑通 | **已解除阻塞，已实测** |
+| 前端设计系统符合度 | `frontend/` 已按 `19` 号文档重构（浅色靛蓝紫、顶部横向导航、玻璃拟态受 §4.5 约束），并完成 Beautiful UI 本地适配；导航与图谱改造、证据登记表单均已跑四档视口探针（含表单交互与 ≥24px 点击目标）全部通过 | 已符合，视觉与无障碍验收矩阵已执行 |
+| 数据库与端到端 | 本地 PostgreSQL 17.5 `career_path` 库与角色已建立，Flyway 迁移至 **v4**（V4 新增 `evidence.title`、`evidence_skill_link.claimed_level`）；`目标 → JD 导入 → 解析 → 能力图谱 → 证据登记 → 估计重算` 已用真实数据实测跑通 | **已解除阻塞，已实测** |
 | 产品名称 | “职径（CareerPath）”仅为暂定文案，尚未最终确定 | 待定 |
 | 规格文档 | `shared_docs/00`～`19` 与索引已存在 | 已完成 |
 | 本地 CodeArts 目录 | `.codeartsdoer/` 存在，但被根 `.gitignore` 排除 | 本地工具状态 |
@@ -182,9 +182,9 @@ Python 标准库 `ipaddress.is_private` 不覆盖 `100.64.0.0/10`（RFC 6598 运
 
 ### D. 当前阻塞
 
-- **数据库**：已解除。5432 实例（服务 `postgresql-x64-17`）原本既无 `career_path` 角色也无 `career_path` 库，报出的 `28P01` 实为“角色不存在”的固定返回而非密码错误；已用单用户模式创建角色与库，Flyway 迁移至 v3。**遗留运维事项**：该实例当前由 WMI 脱离进程树临时启动，长期稳定需以管理员身份 `net start postgresql-x64-17`；切换前必须先 `pg_ctl stop -D D:\PostgreSQL\data\data -m fast`（两者共用同一数据目录）；
+- **数据库**：已解除。5432 实例（服务 `postgresql-x64-17`）原本既无 `career_path` 角色也无 `career_path` 库，报出的 `28P01` 实为“角色不存在”的固定返回而非密码错误；已用单用户模式创建角色与库，Flyway 迁移至 v4（2026-09-22 追加 V4 证据列）。**遗留运维事项**：该实例当前由 WMI 脱离进程树临时启动，长期稳定需以管理员身份 `net start postgresql-x64-17`；切换前必须先 `pg_ctl stop -D D:\PostgreSQL\data\data -m fast`（两者共用同一数据目录）；
 - **端到端闭环**：已解除。2026-09-21 用真实数据跑通并留痕，见第 10 节追加记录；
-- **代码托管决策变更**：2026-09-16 按队伍指令移除 CodeArts 远端，`origin` 改指 GitHub。此举与 `11` 号文档第 7 行及 `README.md` 第 98、99、107 行的“CodeArts 覆盖全流程并留痕”要求冲突，赛事提交规则确认前不作最终结论，见第 7 节 B。当前 `github.com:443` 不可达，8 个提交尚未推送；
+- **代码托管决策变更**：2026-09-16 按队伍指令移除 CodeArts 远端，`origin` 改指 GitHub。此举与 `11` 号文档第 7 行及 `README.md` 第 98、99、107 行的“CodeArts 覆盖全流程并留痕”要求冲突，赛事提交规则确认前不作最终结论，见第 7 节 B。GitHub 推送已恢复，无待推送提交（2026-09-22 复核）；
 - **剩余契约缺口**：岗位发现、测评与面试、学习计划、简历建议四个页面**后端尚无对应接口**，其演示数据真实化必须先新建契约，见第 6 节第 8 项。
 
 ### E. 导航入口可用性与能力图谱对比视图（2026-09-21 用户确认的变更）
@@ -236,11 +236,44 @@ Python 标准库 `ipaddress.is_private` 不覆盖 `100.64.0.0/10`（RFC 6598 运
   Tab 顺序包含切换器、抽屉焦点循环与 Esc 焦点归还均正常；关键文本对比度 4.58～17.72:1，全部达 WCAG AA。
 - 本轮未改动：§5 D 的外部阻塞事项、四个一级页面的演示数据、API 与契约字段。
 
+### F. 能力图谱证据模型缺口 —— 已于 2026-09-22 修复（P0 证据链）
+
+**原缺陷**：`evidence` / `evidence_skill_link` 建了表无任何代码使用；`CapabilityService` 给 `SkillCard` 传 `List.of()` 占位；
+`user_skill_estimate.estimatedLevel` 恒为 `null`、`gapType` 恒为 `EVIDENCE_GAP`——图谱只能显示「要求 vs 未知」，
+这是第 5 节 E 验收时记录的“已知数据限制”的根因（不是前端问题）。
+
+**用户裁决（2026-09-22）**：按 P0-1 契约导出 → P0-2 证据模型落地 → P0-3 表单式证据录入的顺序完成；
+简历文档解析（`resume_version` 来源）延后——项目暂不具备该能力，不得以 Mock 冒充。
+
+**修复内容**：
+
+- **P0-1**：`14` 号新增 §11 能力证据登记契约；`docs/contracts/` 落地 `openapi.json` + 13 个 JSON Schema（零 springdoc 依赖）；
+  `scripts/check-contracts.mjs` 做契约 ↔ `types.ts` ↔ OpenAPI 三方一致性校验，全绿（错误 0、警告 0）。
+- **P0-2**：Flyway V4 补 `evidence.title` 与 `evidence_skill_link.claimed_level`；新增 `evidence/` 模块
+  （Entity × 2、Repository × 2、DTO × 2、`EvidenceType`/`EvidenceDirection` 枚举、`EvidenceAggregator` 纯函数、
+  `EstimateRecalculator`、`EvidenceService`、`EvidenceController`）；`CapabilityService` 改为填充真实
+  `evidenceIds` / `sourceQuotes`。聚合权重表、置信度饱和公式、`WEAKENS` 扣减与三态 `gapType` 与 `14` 号 §11.4 一致，
+  回归测试 `EvidenceAggregatorTest` 16 项，后端总计 101 项全绿。
+- **P0-3**：`CapabilityMapView` 新增「登记证据」折叠表单（类型/标题/说明/技能关联行 1..20 可增删），
+  遵循 `19` 号 §5.4 表单规范、复用 `BeautifulButton` 与全局 `.form/.field/.input/.select` 类；
+  提交成功展示 `updatedEstimates` 摘要，失败保留输入并显示 `traceId`；`client.ts` 增 `registerEvidence` / `listEvidences`。
+
+**验收证据（2026-09-22）**：
+
+- `mvnw test` 101 项全绿；`check-contracts.mjs` 全绿；`npm run typecheck` / `npm run build` 通过；
+- 端到端：重启后端（Flyway 自动执行 V4）→ `POST /evidences`（PROJECT → java-basics，claimedLevel 3）返回
+  `estimatedLevel 3.0 / confidence 0.39 / gapType KNOWLEDGE_GAP` → `GET capability-map` 持久化生效，
+  `evidenceIds` / `sourceQuotes` 不再为空；`GET /evidences` 列表返回该条记录；
+- 四档视口 CDP 探针（1440 / 1024 / 390 / 200% 等效 720）：无横向溢出、点击目标均 ≥24px、
+  证据表单开合与增删行在四档全部可用；期间修复 `GoalSwitcher` 下拉点击区高度 18px→撑满容器（`align-self: stretch`）。
+
+**本轮未改动**：四个一级页面演示数据、§5 D 外部阻塞事项（托管冲突与 PostgreSQL 运维事项仍待队伍确认）。
+
 ## 6. 立即可执行任务
 
 云码道不需要等待所有外部问题回答后才工作，按以下顺序推进：
 
-1. 收尾 CP-002：完成 [14-contracts-and-schemas.md](./14-contracts-and-schemas.md) 到 OpenAPI / JSON Schema 的导出，写入 `docs/contracts`；
+1. ~~收尾 CP-002：完成 [14-contracts-and-schemas.md](./14-contracts-and-schemas.md) 到 OpenAPI / JSON Schema 的导出，写入 `docs/contracts`~~ —— 已完成（2026-09-22，含 `scripts/check-contracts.mjs` 一致性校验与 14 号 §11 证据契约）；
 2. ~~解除数据库阻塞，在真实库上跑通 `scripts/db-migrate` 与 `scripts/db-seed`~~ —— 已完成（2026-09-21，Flyway v3，10 张业务表）；
 3. ~~端到端验证核心闭环：目标 → JD 导入 → 解析 → 能力图谱 → 前端呈现~~ —— 已完成（2026-09-21）；
 4. ~~修复第 5 节 B 的 5 项契约缺陷，尤其是“未知猜成已知”的等级兜底~~ —— 已完成（2026-09-21，实际修复 8 项）；
@@ -287,12 +320,12 @@ Python 标准库 `ipaddress.is_private` 不覆盖 `100.64.0.0/10`（RFC 6598 运
 
 - 当前任务编号及其依赖；
 - CP-001 为 `PARTIAL`、CP-002 为 `PARTIAL`、CP-003 未开始，而不是未初始化；
-- 应用代码已有 16 个本地提交，`main` 与 `origin/main` 已一致（无待推送）；`frontend/` 已符合 `19` 号设计系统并通过视觉验收矩阵；
+- 应用代码已有 17 个本地提交，`main` 与 `origin/main` 已一致（无待推送）；`frontend/` 已符合 `19` 号设计系统并通过视觉验收矩阵；
 - 代码托管为 GitHub 单一远端，CodeArts 远端已移除，该决策与 `11` 号文档冲突且待确认；
 - 本次准备创建或修改的文件；
 - 使用本地 Mock 还是已确认云服务；
 - 测试和人工验收方式；
-- 数据库与端到端闭环已于 2026-09-21 实测跑通（`career_path` 库与角色已建立、Flyway v3）；仍须转述第 5 节 D 的托管冲突与 PostgreSQL 运维事项；
+- 数据库与端到端闭环已于 2026-09-21 实测跑通，2026-09-22 追加证据登记闭环（`career_path` 库与角色已建立、Flyway v4）；仍须转述第 5 节 D 的托管冲突与 PostgreSQL 运维事项；
 - 若依赖外部确认，明确指出但不要因此停止无关工作。
 
 ## 9. 状态更新格式
@@ -661,4 +694,71 @@ Python 标准库 `ipaddress.is_private` 不覆盖 `100.64.0.0/10`（RFC 6598 运
 下一步：
   - 第 6 节第 8 项（新建 CP-003 起的最小契约，替换四个一级页面的演示数据）
   - 待用户裁决 19 号 §3.2 / §3.3 的导航断点以文档还是实现为准
+```
+
+### 追加记录（2026-09-22 P0 证据链落地：契约导出 + 证据模型 + 证据录入）
+
+```text
+日期：2026-09-22
+任务：第 6 节第 1 项收尾（P0-1 / P0-2 / P0-3，用户同日批准「开工吧，完成P0-1,2,3」）
+变更理由：
+  - 此前验收已确认图谱「要求 vs 未知」的根因是证据模型 0 行实现（第 5 节 F 原缺陷）；
+  - CP-002 要求 14 号契约必须有机器可读导出物并可防漂移；
+  - 用户裁决简历解析延后，证据来源先走表单式录入，禁止 Mock 冒充
+已完成：
+  - P0-1 契约导出：14 号新增 §11 能力证据登记（接口/请求/响应/权重表/兼容影响，
+    GET 场景 updatedEstimates 语义已补注）；docs/contracts/ 新增 openapi.json
+    （6 路径 8 操作）+ schemas/ 13 个 JSON Schema（每个带 x-frontend-interface 注记）；
+    scripts/check-contracts.mjs 零依赖三方一致性校验（契约↔types.ts↔OpenAPI），全绿
+  - P0-2 证据模型：Flyway V4__evidence_claimed_level（evidence.title、
+    evidence_skill_link.claimed_level CHECK 0..5）；新增 backend evidence/ 模块：
+    EvidenceType（11 值）/ EvidenceDirection（3 值）枚举、Evidence/EvidenceSkillLink 实体、
+    两个 Repository、RegisterEvidenceRequest/EvidenceView DTO、EvidenceAggregator 纯函数
+    （11.4 权重表唯一来源）、EstimateRecalculator、EvidenceService（登记/列表/校验）、
+    EvidenceController（POST+GET /goals/{goalId}/evidences）；
+    CapabilityService 注入 EvidenceSkillLinkRepository，SkillCard.evidenceIds/sourceQuotes
+    由 List.of() 占位改为真实引用（contentSummary 截 80 字符，回退 title）
+  - P0-3 表单录入：types.ts/client.ts 增证据类型与 registerEvidence/listEvidences；
+    CapabilityMapView 新增「登记证据」折叠表单——类型/标题/说明/技能关联行 1..20 可增删、
+    成功展示 updatedEstimates 摘要、失败保留输入并显示 traceId、goalId 切换重置表单；
+    遵循 19 号 §5.4 表单规范，复用 BeautifulButton 与全局 .form/.field/.input/.select
+  - GoalSwitcher 修复：.goal-switch__select 增 align-self: stretch，下拉点击区
+    由 18px 撑满容器（探针 ≥24px 判定项）
+  - 19 号 §18 台账新增一行；本文档 §1 快照 / §5 F / §6 第 1 项 / §8 同步更新
+影响范围：
+  - shared_docs/14-contracts-and-schemas.md（§11 新节 + GET 语义补注）
+  - docs/contracts/openapi.json、docs/contracts/schemas/*.json（13 个，新增目录）
+  - scripts/check-contracts.mjs（新增）
+  - backend：evidence/ 模块（新增）、V4 迁移（新增）、EvidenceAggregatorTest（新增）、
+    skill/CapabilityService.java（填充证据引用）
+  - frontend：api/types.ts、api/client.ts、views/CapabilityMapView.vue、
+    components/GoalSwitcher.vue
+  - 不涉及：四个一级页面演示数据、评分规则字段名、git 配置
+验收证据：
+  - 后端 mvnw test：101 项全绿（含 EvidenceAggregatorTest 16 项）
+  - node scripts/check-contracts.mjs：错误 0、警告 0
+  - 前端 npm run typecheck / npm run build：通过（EXIT 0）
+  - 端到端（真实库，Flyway 自动执行 V4）：
+    POST /api/v1/goals/2e0a76ae…/evidences（PROJECT→java-basics claimedLevel 3）
+    返回 estimatedLevel 3.0 / confidence 0.39 / gapType KNOWLEDGE_GAP；
+    GET capability-map 持久化生效，evidenceIds/sourceQuotes 非空；
+    GET /evidences 列表 count=1；登记前状态为 null/0.10/EVIDENCE_GAP，符合契约三态
+  - CDP 四档探针（1440×900 / 1024×768 / 390×844 / 200% 等效 720）：
+    四档 overflowX=false、smallTargets=0、证据表单开合/增删行/字段/提交按钮全部可用；
+    修复前 GoalSwitcher 18px 命中项已消除
+  - 已知工程注记：Windows 下 curl -d 内联中文 JSON 会因编码损坏得 400，
+    改 --data-binary @utf8-file 后通过（属本机验收工具问题，非接口缺陷）
+未完成：
+  - 上述全部改动尚未提交（待用户确认提交分组清单）
+  - 简历文档解析（resume_version 来源）按用户裁决延后
+  - 四个一级页面接真实接口仍待新建 CP-003 起的最小契约（第 6 节第 8 项）
+  - 19 号 §3.2/§3.3 导航断点文档与实现不符的登记项仍待用户裁决
+证据：
+  - 本文第 5 节 F、第 6 节第 1 项、第 1 节状态快照
+  - shared_docs/14-contracts-and-schemas.md §11；shared_docs/19-ui-design-system.md §18
+阻塞：
+  - 无（DATABASE_PASSWORD 已由 .tmp-start-backend.ps1 提供，后端已重启并验证）
+下一步：
+  - 列提交分组清单请用户确认后分组提交
+  - 用户验收通过后推进第 6 节第 8 项（CP-003 起最小契约）
 ```
