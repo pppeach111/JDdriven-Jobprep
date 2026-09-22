@@ -99,6 +99,7 @@ function onChange(event: Event) {
   flex: 0 1 auto;
   min-width: 0;
   max-width: 150px;
+  align-self: stretch;
   border: 0;
   background: transparent;
   color: var(--color-text);
